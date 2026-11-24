@@ -3,10 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#92400e" />
+  <link rel="icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Kala &amp; Karsa — Katalog &amp; Simulasi Ruang Interaktif</title>
+  <meta name="description" content="Katalog furnitur dan dekorasi Kala &amp; Karsa. Lihat produk di ruang display dan coba pasang di foto ruanganmu." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Kala &amp; Karsa — Katalog &amp; Simulasi Ruang Interaktif" />
+  <meta property="og:description" content="Temukan furnitur, lihat langsung di ruanganmu." />
+  <meta name="twitter:card" content="summary" />
   <style>[x-cloak]{display:none !important}</style>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
 <body class="bg-stone-100 text-stone-800 font-sans antialiased" x-data="kalaKarsaClearApp()" x-init="init()">
 
@@ -70,8 +81,7 @@
         <h2 class="text-3xl sm:text-5xl font-bold leading-tight">Temukan furnitur, lihat langsung di ruanganmu.</h2>
         <p class="text-sm sm:text-base text-stone-300 leading-relaxed">Jelajahi ruang display kami, klik tanda (+) untuk detail produk, lalu coba tempatkan di fotomu sendiri sebelum memesan.</p>
         <div class="flex flex-wrap gap-2.5 pt-1">
-          <button type="button" @click="document.getElementById('bagian-ruang-contoh
-          ')?.scrollIntoView({ behavior: 'smooth' })" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-sm font-bold transition">Jelajahi Ruangan</button>
+          <button type="button" @click="document.getElementById('bagian-ruang-contoh')?.scrollIntoView({ behavior: 'smooth' })" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-sm font-bold transition">Jelajahi Ruangan</button>
           <button type="button" @click="switchMode('simulasi')" class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition">🛋️ Coba Simulasi</button>
         </div>
       </div>
@@ -431,8 +441,21 @@
         <span class="text-xs font-semibold text-stone-500" x-text="savedProducts.length + ' Produk Tersedia'"></span>
       </div>
 
+      <div class="flex flex-wrap items-center gap-2">
+        <input type="text" x-model="catSearch" placeholder="🔍 Cari produk" class="flex-1 min-w-[160px] px-3 py-2 rounded-xl border border-stone-300 bg-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-600/40" />
+        <select x-model="catCategory" class="px-3 py-2 rounded-xl border border-stone-300 bg-white text-xs">
+          <option value="">Semua kategori</option>
+          <template x-for="c in catCategories" :key="'cat-' + c"><option :value="c" x-text="c"></option></template>
+        </select>
+        <select x-model="catSort" class="px-3 py-2 rounded-xl border border-stone-300 bg-white text-xs">
+          <option value="default">Urutan bawaan</option><option value="murah">Termurah</option><option value="mahal">Termahal</option><option value="nama">Nama A–Z</option>
+        </select>
+        <button type="button" @click="onlyFavs = !onlyFavs" :class="onlyFavs ? 'bg-rose-100 text-rose-700' : 'bg-stone-100 text-stone-700'" class="px-3 py-2 rounded-xl text-xs font-semibold">♥ Favorit (<span x-text="favs.length"></span>)</button>
+      </div>
+      <p x-show="catFiltered.length === 0" class="text-xs text-stone-500 py-4 text-center">Produk tidak ditemukan.</p>
+
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <template x-for="item in savedProducts" :key="'grid-' + item.id">
+        <template x-for="item in catFiltered" :key="'grid-' + item.id">
           <div class="rounded-2xl border border-stone-200 bg-white overflow-hidden flex flex-col justify-between hover:shadow-sm transition">
             <div>
               <div class="w-full h-40 bg-white border-b border-stone-100 flex items-center justify-center p-2">
@@ -462,6 +485,9 @@
                 class="w-full px-2.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-[11px] font-semibold transition">
                 Detail Produk
               </button>
+              <button type="button" @click="shareProduct(item)" aria-label="Bagikan link produk" class="px-3 py-2 rounded-xl bg-stone-100 text-stone-600 text-sm leading-none">🔗</button>
+              <button type="button" @click="toggleFav(item)" :aria-label="'Favorit ' + item.name" :class="favs.includes(item.id) ? 'bg-rose-100 text-rose-600' : 'bg-stone-100 text-stone-500'" class="px-3 py-2 rounded-xl text-sm leading-none" x-text="favs.includes(item.id) ? '♥' : '♡'"></button>
+              <button type="button" @click="addCart(item)" :disabled="item.stock <= 0" class="flex-1 px-2.5 py-2 rounded-xl bg-stone-900 hover:bg-stone-700 disabled:opacity-40 text-white text-[11px] font-semibold transition">+ Keranjang</button>
               <a
                 :href="item.stock > 0 ? whatsappLink(item) : null"
                 target="_blank" rel="noopener"
@@ -481,8 +507,372 @@
       </div>
     </section>
 
+    <section x-show="activeMode === 'katalog' && recentProducts.length" x-cloak class="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 space-y-3">
+      <h2 class="font-bold text-base text-stone-900">Terakhir dilihat</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <template x-for="r in recentProducts" :key="'rv-' + r.id">
+          <button type="button" @click="openDetail(r)" class="rounded-xl border border-stone-200 p-2 text-left hover:bg-stone-50">
+            <img :src="r.imageUrl" :alt="r.name" class="h-20 w-full object-contain" />
+            <p class="text-xs font-semibold text-stone-800 mt-1 line-clamp-1" x-text="r.name"></p>
+            <p class="text-xs font-bold text-amber-800" x-text="formatRupiah(r.price)"></p>
+          </button>
+        </template>
+      </div>
+    </section>
+
+    <section id="tentang" x-show="activeMode === 'katalog'" class="rounded-2xl bg-stone-900 text-white p-6 sm:p-8 grid sm:grid-cols-2 gap-5">
+      <div class="space-y-2">
+        <h2 class="font-bold text-lg">Tentang Kala &amp; Karsa</h2>
+        <p class="text-sm text-stone-300 leading-relaxed">Kami menghadirkan furnitur dan dekorasi kriya yang bisa kamu lihat langsung di ruang display dan dicoba di fotomu sendiri sebelum memesan.</p>
+      </div>
+      <div class="space-y-2">
+        <h2 class="font-bold text-lg">Hubungi Kami</h2>
+        <p class="text-sm text-stone-300">Tanya stok, harga, atau pengiriman lewat WhatsApp.</p>
+        <a :href="'https://wa.me/' + whatsappNumber" target="_blank" rel="noopener" class="inline-block px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-sm font-semibold">Chat WhatsApp</a>
+      </div>
+    </section>
+
     <footer class="text-center text-[11px] text-stone-500 pt-2">© Kala &amp; Karsa — Kriya &amp; Dekorasi Ruang Interaktif</footer>
+
+    <!-- Keranjang (pesan semua via WhatsApp) -->
+    <div x-show="activeMode === 'katalog' && cart.length" x-cloak class="fixed bottom-4 left-4 z-40">
+      <button type="button" @click="cartOpen = !cartOpen" class="px-4 py-2.5 rounded-full bg-stone-900 text-white text-xs font-semibold shadow-lg">🛒 Keranjang (<span x-text="cartCount()"></span>)</button>
+      <div x-show="cartOpen" x-cloak class="absolute bottom-12 left-0 w-72 bg-white rounded-2xl shadow-2xl border border-stone-200 p-3 space-y-2">
+        <template x-for="r in cartRows()" :key="'cart-' + r.id">
+          <div class="flex items-center justify-between gap-2 text-xs">
+            <span class="flex-1 font-semibold text-stone-800" x-text="r.p.name"></span>
+            <button type="button" @click="cartQty(r.id, -1)" class="h-6 w-6 rounded bg-stone-100">−</button>
+            <span x-text="r.qty"></span>
+            <button type="button" @click="cartQty(r.id, 1)" class="h-6 w-6 rounded bg-stone-100">+</button>
+          </div>
+        </template>
+        <div class="flex justify-between text-xs font-bold pt-1 border-t border-stone-200"><span>Total</span><span x-text="formatRupiah(cartTotal())"></span></div>
+        <a :href="cartLink()" target="_blank" rel="noopener" class="block text-center px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold">Pesan semua via WhatsApp</a>
+      </div>
+    </div>
+    <!-- =========================================================
+         MODE 3: ADMIN (CRUD Produk + Editor Tanda (+) Ruangan)
+         ========================================================= -->
+    <section x-show="activeMode === 'admin' && adminUnlocked" x-cloak class="space-y-4">
+
+      <div x-show="adminUnlocked" class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="inline-flex rounded-xl bg-stone-200/70 p-1">
+            <button type="button" @click="adminTab = 'produk'" :class="adminTab === 'produk' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition">📦 Produk</button>
+            <button type="button" @click="adminTab = 'ringkasan'" :class="adminTab === 'ringkasan' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition">📊 Ringkasan</button>
+            <button type="button" @click="adminTab = 'tanda'" :class="adminTab === 'tanda' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition">📍 Ruangan &amp; Tanda (+)</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <span x-show="useSupabase" class="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+              :class="syncState === 'error' ? 'bg-red-100 text-red-700' : (syncState === 'saving' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')"
+              x-text="syncState === 'error' ? '☁️ Gagal sinkron' : (syncState === 'saving' ? '☁️ Menyimpan…' : '☁️ Tersambung Supabase')"></span>
+            <button type="button" x-show="useSupabase" @click="seedToSupabase()" class="px-3 py-1.5 rounded-lg bg-white border border-stone-300 text-stone-600 hover:bg-stone-50 text-xs font-semibold" title="Kirim semua produk &amp; ruangan yang tampil sekarang ke database">Kirim data ke Supabase</button>
+            <button type="button" x-show="!useSupabase" @click="resetAdminData()" class="px-3 py-1.5 rounded-lg bg-white border border-stone-300 text-stone-600 hover:bg-stone-50 text-xs font-semibold">Reset ke Bawaan</button>
+            <button type="button" @click="openCredForm()" class="px-3 py-1.5 rounded-lg bg-white border border-stone-300 text-stone-600 hover:bg-stone-50 text-xs font-semibold">🔑 Ganti Login</button>
+            <button type="button" @click="logoutAdmin()" class="px-3 py-1.5 rounded-lg bg-stone-900 text-white hover:bg-stone-700 text-xs font-semibold">Keluar</button>
+          </div>
+        </div>
+
+        <!-- TAB RINGKASAN -->
+        <div x-show="adminTab === 'ringkasan'" x-cloak class="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 space-y-4">
+          <h2 class="font-bold text-base text-stone-900">Ringkasan Toko</h2>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            <div class="rounded-xl bg-amber-50 p-3"><div class="text-2xl font-bold text-amber-900" x-text="adminStats.produk"></div><div class="text-[11px] text-stone-600">Produk</div></div>
+            <div class="rounded-xl bg-emerald-50 p-3"><div class="text-2xl font-bold text-emerald-800" x-text="adminStats.stok"></div><div class="text-[11px] text-stone-600">Total stok</div></div>
+            <div class="rounded-xl bg-red-50 p-3"><div class="text-2xl font-bold text-red-700" x-text="adminStats.habis"></div><div class="text-[11px] text-stone-600">Stok habis</div></div>
+            <div class="rounded-xl bg-stone-50 p-3"><div class="text-2xl font-bold text-stone-800" x-text="adminStats.kategori"></div><div class="text-[11px] text-stone-600">Kategori</div></div>
+            <div class="rounded-xl bg-stone-50 p-3"><div class="text-2xl font-bold text-stone-800" x-text="adminStats.ruangan"></div><div class="text-[11px] text-stone-600">Ruangan</div></div>
+            <div class="rounded-xl bg-stone-50 p-3"><div class="text-2xl font-bold text-stone-800" x-text="adminStats.tanda"></div><div class="text-[11px] text-stone-600">Tanda (+)</div></div>
+            <div class="rounded-xl bg-amber-50 p-3 col-span-2"><div class="text-lg font-bold text-amber-900" x-text="formatRupiah(adminStats.nilai)"></div><div class="text-[11px] text-stone-600">Nilai stok</div></div>
+          </div>
+          <div x-show="adminStats.terendah.length">
+            <p class="text-xs font-bold text-stone-700 mb-1">Stok menipis (≤ 5)</p>
+            <template x-for="p in adminStats.terendah" :key="'low-' + p.id"><p class="text-xs text-stone-600" x-text="p.name + ' — sisa ' + p.stock"></p></template>
+          </div>
+        </div>
+
+        <!-- TAB PRODUK -->
+        <div x-show="adminTab === 'produk'" class="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 class="font-bold text-base text-stone-900">Manajemen Produk</h2>
+              <p class="text-xs text-stone-500" x-text="savedProducts.length + ' produk'"></p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="text" x-model="adminSearch" placeholder="🔍 Cari produk" class="rounded-xl border border-stone-300 px-3 py-2 text-xs w-40 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <button type="button" @click="exportCsv()" class="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold">⬇ CSV</button>
+              <button type="button" @click="newProductForm()" class="px-4 py-2 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-semibold">+ Tambah Produk</button>
+            </div>
+          </div>
+
+          <div class="divide-y divide-stone-100">
+            <template x-for="p in adminFilteredProducts" :key="'adm-' + p.id">
+              <div class="flex items-center gap-3 py-2.5">
+                <div class="h-14 w-14 shrink-0 rounded-lg border border-stone-200 bg-white flex items-center justify-center overflow-hidden">
+                  <img :src="p.imageUrl" :alt="p.name" @error="applyFallbackImage(p)" class="max-h-full max-w-full object-contain" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="font-semibold text-sm text-stone-900 truncate" x-text="p.name"></div>
+                  <div class="text-[11px] text-stone-500"><span x-text="p.category"></span> · <span class="text-amber-800 font-semibold" x-text="formatRupiah(p.price)"></span> · stok <span x-text="p.stock"></span></div>
+                </div>
+                <button type="button" @click="editProduct(p)" class="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold">Edit</button>
+                <button type="button" @click="deleteProduct(p)" class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold">Hapus</button>
+              </div>
+            </template>
+            <p x-show="adminFilteredProducts.length === 0" class="py-6 text-center text-xs text-stone-500">Belum ada produk.</p>
+          </div>
+        </div>
+
+        <!-- TAB RUANGAN & TANDA (+) -->
+        <div x-show="adminTab === 'tanda'" class="space-y-4">
+          <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="font-bold text-base text-stone-900">Pilih Ruangan</h2>
+              <button type="button" @click="newSceneForm()" class="px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white text-xs font-semibold">+ Ruangan Baru</button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <template x-for="sc in scenes" :key="'adm-sc-' + sc.id">
+                <button type="button" @click="adminSceneId = sc.id"
+                  :class="adminScene.id === sc.id ? 'bg-amber-800 text-white shadow-xs' : 'bg-white border border-stone-300 text-stone-700 hover:bg-stone-50'"
+                  class="px-3.5 py-1.5 rounded-full text-xs font-semibold transition">
+                  <span x-text="sc.label"></span> <span class="opacity-60" x-text="'· ' + (sc.group === 'indoor' ? 'Indoor' : 'Outdoor')"></span>
+                </button>
+              </template>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" @click="editSceneForm(adminScene)" class="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold">✎ Ubah ruangan ini (nama / foto)</button>
+              <button type="button" @click="deleteScene(adminScene)" class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold">Hapus ruangan ini</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="lg:col-span-2 space-y-2">
+              <div class="rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-xs px-3.5 py-2.5">
+                <b>Cara menandai:</b> pilih produk di kanan, lalu <b>klik di foto</b> tepat pada furnitur. Klik lagi untuk memindah, atau <b>tarik</b> tanda (+) yang sudah ada.
+              </div>
+              <div @click="placeHotspot($event)" @pointermove="dragHotspot($event)" @pointerup="endDragHotspot()" @pointercancel="endDragHotspot()"
+                style="max-width: calc(75vh * var(--r));"
+                class="relative mx-auto w-full aspect-[16/10] sm:aspect-[16/9] [--r:1.6] sm:[--r:1.7778] rounded-2xl overflow-hidden shadow-md border border-stone-200 bg-stone-900 cursor-crosshair select-none">
+                <img :src="adminScene.image" :alt="adminScene.label" draggable="false" class="w-full h-full object-cover pointer-events-none" />
+                <template x-for="(h, i) in (adminScene.hotspots || [])" :key="'ah-' + i + '-' + h.productId">
+                  <button type="button" @click.stop @pointerdown.prevent.stop="startDragHotspot($event, i)"
+                    :style="`left: ${h.x}%; top: ${h.y}%;`"
+                    :class="String(h.productId) === String(adminHotspotProductId) ? 'bg-amber-600 text-white ring-4 ring-amber-300/70' : 'bg-white/95 text-stone-900 ring-4 ring-black/20'"
+                    class="absolute -translate-x-1/2 -translate-y-1/2 h-8 w-8 rounded-full font-bold text-base leading-none flex items-center justify-center shadow-lg z-20 cursor-grab active:cursor-grabbing touch-none"
+                    :title="adminProductName(h.productId)">
+                    <span>+</span>
+                    <span class="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold bg-stone-900/80 text-white rounded px-1.5 py-0.5 pointer-events-none" x-text="adminProductName(h.productId)"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 space-y-3 h-fit">
+              <div>
+                <label class="block text-xs font-semibold text-stone-700 mb-1">Produk yang ditandai</label>
+                <select x-model="adminHotspotProductId" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                  <option value="">— pilih produk —</option>
+                  <template x-for="p in savedProducts" :key="'opt-' + p.id">
+                    <option :value="p.id" x-text="p.name"></option>
+                  </template>
+                </select>
+              </div>
+              <div class="space-y-2">
+                <div class="text-xs font-semibold text-stone-700" x-text="'Tanda (+) di ruangan ini (' + (adminScene.hotspots || []).length + ')'"></div>
+                <template x-for="(h, i) in (adminScene.hotspots || [])" :key="'al-' + i + '-' + h.productId">
+                  <div class="rounded-xl border border-stone-200 p-2.5 space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                      <button type="button" @click="adminHotspotProductId = h.productId" class="text-xs font-semibold text-stone-900 text-left hover:text-amber-800" x-text="adminProductName(h.productId)"></button>
+                      <button type="button" @click="removeHotspot(i)" class="text-xs font-bold text-red-600 hover:text-red-800">Hapus</button>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-stone-600">
+                      <label class="flex items-center gap-1">x <input type="number" step="0.5" min="0" max="100" x-model.number="h.x" @change="saveStore()" class="w-16 rounded-md border border-stone-300 px-1.5 py-1" />%</label>
+                      <label class="flex items-center gap-1">y <input type="number" step="0.5" min="0" max="100" x-model.number="h.y" @change="saveStore()" class="w-16 rounded-md border border-stone-300 px-1.5 py-1" />%</label>
+                    </div>
+                  </div>
+                </template>
+                <p x-show="(adminScene.hotspots || []).length === 0" class="text-xs text-stone-500">Belum ada tanda. Pilih produk lalu klik foto.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
+
+  <!-- Halaman Login Admin (terpisah dari toko; buka lewat index.html#admin) -->
+  <div x-show="showLogin" x-cloak class="fixed inset-0 z-[60] bg-gradient-to-br from-amber-900 via-stone-900 to-stone-950 flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 space-y-4">
+      <div class="text-center space-y-1">
+        <div class="mx-auto h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center text-2xl">🔐</div>
+        <h2 class="font-bold text-xl text-stone-900">Login Admin</h2>
+        <p class="text-xs text-stone-500">Kala &amp; Karsa · Manajemen Produk &amp; Display</p>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-stone-700 mb-1" x-text="useSupabase ? 'Email' : 'Username'"></label>
+          <input :type="useSupabase ? 'email' : 'text'" x-model="loginUser" autocomplete="username" @keydown.enter="submitLogin()"
+            class="w-full rounded-xl border border-stone-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-700 mb-1">Password</label>
+          <div class="relative">
+            <input :type="loginShow ? 'text' : 'password'" x-model="loginPass" autocomplete="current-password" @keydown.enter="submitLogin()"
+              class="w-full rounded-xl border border-stone-300 px-3 py-2.5 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            <button type="button" @click="loginShow = !loginShow" class="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-stone-500 hover:text-stone-800 px-2 py-1" x-text="loginShow ? 'Sembunyi' : 'Lihat'"></button>
+          </div>
+        </div>
+        <p x-show="loginError" class="text-xs text-red-600" x-text="loginError"></p>
+        <button type="button" @click="submitLogin()" :disabled="loginBusy" class="w-full px-4 py-2.5 rounded-xl bg-amber-800 hover:bg-amber-900 disabled:opacity-60 text-white text-sm font-semibold">Masuk</button>
+        <button type="button" @click="closeLogin()" class="w-full text-xs font-semibold text-stone-500 hover:text-stone-800">← Kembali ke toko</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ganti Username / Password Admin -->
+  <div x-show="credForm" x-cloak class="fixed inset-0 z-50 bg-stone-900/60 overflow-y-auto p-4" @keydown.escape.window="credForm = null">
+    <div class="max-w-sm mx-auto bg-white rounded-2xl shadow-2xl p-5 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-lg text-stone-900" x-text="useSupabase ? 'Ganti Password Admin' : 'Ganti Login Admin'"></h3>
+        <button type="button" @click="credForm = null" class="h-7 w-7 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 font-bold">✕</button>
+      </div>
+      <template x-if="credForm">
+        <div class="space-y-3">
+          <div x-show="!useSupabase"><label class="block text-xs font-semibold text-stone-700 mb-1">Username baru</label>
+            <input type="text" x-model="credForm.user" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" /></div>
+          <div><label class="block text-xs font-semibold text-stone-700 mb-1">Password baru (min. 6 karakter)</label>
+            <input type="password" x-model="credForm.pass" autocomplete="new-password" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" /></div>
+          <div><label class="block text-xs font-semibold text-stone-700 mb-1">Ulangi password baru</label>
+            <input type="password" x-model="credForm.pass2" autocomplete="new-password" @keydown.enter="saveCred()" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" /></div>
+          <p x-show="credForm.error" class="text-xs text-red-600" x-text="credForm.error"></p>
+          <div class="flex justify-end gap-2 pt-1">
+            <button type="button" @click="credForm = null" class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-sm font-semibold">Batal</button>
+            <button type="button" @click="saveCred()" class="px-5 py-2 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-sm font-semibold">Simpan</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Modal Form Produk (Admin) -->
+  <div x-show="productForm" x-cloak class="fixed inset-0 z-50 bg-stone-900/60 overflow-y-auto p-4" @keydown.escape.window="productForm = null">
+    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-lg text-stone-900" x-text="productFormIsNew ? 'Tambah Produk' : 'Edit Produk'"></h3>
+        <button type="button" @click="productForm = null" class="h-7 w-7 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 font-bold">✕</button>
+      </div>
+      <template x-if="productForm">
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Nama produk *</label>
+              <input type="text" x-model="productForm.name" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Kategori</label>
+              <input type="text" list="admin-kategori" x-model="productForm.category" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <datalist id="admin-kategori">
+                <option value="MEJA"></option><option value="KURSI"></option><option value="SOFA"></option><option value="LEMARI"></option><option value="LAMPU"></option><option value="DEKORASI"></option>
+              </datalist>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-stone-700 mb-1">SKU (opsional)</label>
+              <input type="text" x-model="productForm.sku" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Harga (Rp)</label>
+              <input type="number" min="0" step="1000" x-model.number="productForm.price" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Stok</label>
+              <input type="number" min="0" step="1" x-model.number="productForm.stock" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Deskripsi</label>
+              <textarea rows="3" x-model="productForm.description" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+            </div>
+            <div><label class="block text-xs font-semibold text-stone-700 mb-1">Material</label><input type="text" x-model="productForm.material" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" /></div>
+            <div><label class="block text-xs font-semibold text-stone-700 mb-1">Warna</label><input type="text" x-model="productForm.color" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" /></div>
+            <div><label class="block text-xs font-semibold text-stone-700 mb-1">Dimensi (P × L × T)</label><input type="text" x-model="productForm.dimension" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" /></div>
+            <div><label class="block text-xs font-semibold text-stone-700 mb-1">Berat</label><input type="text" x-model="productForm.weight" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" /></div>
+            <div><label class="block text-xs font-semibold text-stone-700 mb-1">Garansi</label><input type="text" x-model="productForm.warranty" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" /></div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Fitur (satu per baris)</label>
+              <textarea rows="3" x-model="productForm.featuresText" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-stone-200 p-3 space-y-2">
+            <div class="text-xs font-semibold text-stone-700">Foto produk</div>
+            <div class="flex items-start gap-3">
+              <div class="h-24 w-24 shrink-0 rounded-lg border border-stone-200 bg-white flex items-center justify-center overflow-hidden">
+                <img x-show="adminFormImage('product')" :src="adminFormImage('product')" class="max-h-full max-w-full object-contain" alt="Pratinjau" />
+                <span x-show="!adminFormImage('product')" class="text-[10px] text-stone-400 text-center px-1">Belum ada foto</span>
+              </div>
+              <div class="flex-1 space-y-2">
+                <input type="text" x-model="productForm.imageText" @input="productForm.imageData = ''" placeholder="Tempel link gambar / link Google Drive"
+                  class="w-full rounded-xl border border-stone-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                <div class="flex items-center gap-2 text-xs text-stone-500">
+                  <span>atau</span>
+                  <input type="file" accept="image/*" @change="adminUploadImage($event, 'product')" class="text-xs" />
+                </div>
+                <p class="text-[10px] text-stone-400">Link Google Drive harus dibagikan “Siapa saja yang memiliki link”. Kosongkan untuk memakai ilustrasi bawaan.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-1">
+            <button type="button" @click="productForm = null" class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-sm font-semibold">Batal</button>
+            <button type="button" @click="saveProduct()" class="px-5 py-2 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-sm font-semibold">Simpan</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Modal Form Ruangan (Admin) -->
+  <div x-show="sceneForm" x-cloak class="fixed inset-0 z-50 bg-stone-900/60 overflow-y-auto p-4" @keydown.escape.window="sceneForm = null">
+    <div class="max-w-lg mx-auto bg-white rounded-2xl shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-lg text-stone-900" x-text="sceneFormIsNew ? 'Ruangan Baru' : 'Ubah Ruangan'"></h3>
+        <button type="button" @click="sceneForm = null" class="h-7 w-7 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 font-bold">✕</button>
+      </div>
+      <template x-if="sceneForm">
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-stone-700 mb-1">Nama ruangan *</label>
+            <input type="text" x-model="sceneForm.label" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-700 mb-1">Kelompok</label>
+            <select x-model="sceneForm.group" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+              <option value="indoor">Indoor</option>
+              <option value="outdoor">Outdoor</option>
+            </select>
+          </div>
+          <div class="rounded-xl border border-stone-200 p-3 space-y-2">
+            <div class="text-xs font-semibold text-stone-700">Foto ruangan</div>
+            <div class="h-32 rounded-lg border border-stone-200 bg-stone-100 overflow-hidden flex items-center justify-center">
+              <img x-show="adminFormImage('scene')" :src="adminFormImage('scene')" class="w-full h-full object-cover" alt="Pratinjau" />
+            </div>
+            <input type="text" x-model="sceneForm.imageText" @input="sceneForm.imageData = ''" placeholder="Tempel link gambar / link Google Drive"
+              class="w-full rounded-xl border border-stone-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            <div class="flex items-center gap-2 text-xs text-stone-500">
+              <span>atau</span>
+              <input type="file" accept="image/*" @change="adminUploadImage($event, 'scene')" class="text-xs" />
+            </div>
+            <p class="text-[10px] text-stone-400">Mengganti foto tidak mengubah posisi tanda (+). Cek lagi posisinya setelah ganti.</p>
+          </div>
+          <div class="flex justify-end gap-2 pt-1">
+            <button type="button" @click="sceneForm = null" class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-sm font-semibold">Batal</button>
+            <button type="button" @click="saveScene()" class="px-5 py-2 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-sm font-semibold">Simpan</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
 
   <!-- =========================================================
        DETAIL PRODUK (halaman detail standar e-commerce)
@@ -549,6 +939,19 @@
                  class="flex-1 min-w-[150px] text-center px-4 py-3 rounded-xl text-sm font-bold transition"
                  x-text="detailProduct.stock > 0 ? '🛒 Beli via WhatsApp' : 'Stok Habis'"></a>
               <button type="button" @click="detailToSimulation()" class="flex-1 min-w-[150px] px-4 py-3 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-sm font-bold transition">🛋️ Coba di Simulasi</button>
+              <button type="button" @click="shareProduct(detailProduct)" class="px-4 py-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-sm font-bold transition">🔗 Bagikan</button>
+            </div>
+            <div x-show="relatedProducts.length" class="pt-3 border-t border-stone-200">
+              <p class="text-xs font-bold text-stone-700 mb-2">Produk terkait</p>
+              <div class="grid grid-cols-3 gap-2">
+                <template x-for="r in relatedProducts" :key="'rel-' + r.id">
+                  <button type="button" @click="openDetail(r)" class="rounded-xl border border-stone-200 p-2 text-left hover:bg-stone-50">
+                    <img :src="r.imageUrl" :alt="r.name" class="h-14 w-full object-contain" />
+                    <p class="text-[10px] font-semibold text-stone-800 mt-1 line-clamp-2" x-text="r.name"></p>
+                    <p class="text-[10px] font-bold text-amber-800" x-text="formatRupiah(r.price)"></p>
+                  </button>
+                </template>
+              </div>
             </div>
           </div>
         </div>
@@ -605,6 +1008,13 @@
   </div>
 
   <script>
+    // ====== KONFIGURASI SUPABASE ======
+    // Isi dari Supabase Dashboard > Project Settings > API. (anon key memang boleh publik; keamanan diatur oleh RLS di supabase-setup.sql)
+    // Kosongkan keduanya untuk mode lokal (data hanya di browser).
+    const SUPABASE_URL = '';
+    const SUPABASE_ANON_KEY = '';
+    let SB = null; // klien Supabase (di luar Alpine agar tidak ikut di-proxy)
+
     function kalaKarsaClearApp() {
       return {
         activeMode: 'katalog',
@@ -614,6 +1024,8 @@
         isCaptureMode: false,
         whatsappNumber: '6281234567890',
         statusBanner: '',
+        catSearch: '', catCategory: '', catSort: 'default', recent: [],
+        favs: [], onlyFavs: false, cart: [], cartOpen: false,
 
         catalogSelectedProduct: null,
 
@@ -644,8 +1056,719 @@
         dragOffsetX: 0,
         dragOffsetY: 0,
 
+        /* ============ ADMIN: state & CRUD ============ */
+        adminUnlocked: false,
+        useSupabase: false,
+        sbAuthed: false,
+        syncState: 'idle',
+        syncTimer: null,
+        showLogin: false,
+        loginUser: '',
+        loginPass: '',
+        loginShow: false,
+        loginError: '',
+        loginBusy: false,
+        loginFails: 0,
+        loginLockUntil: 0,
+        credForm: null,
+        credSalt: 'kalakarsa-v1|',
+        credStoreKey: 'kalakarsa-cred-v1',
+        sessionKey: 'kalakarsa-admin-session',
+        // Login bawaan: username "admin", password "kalakarsa123" (disimpan sebagai hash). SEGERA ganti lewat Admin > Ganti Login.
+        defaultCredHash: 'cb931d2126972bfe6e79bda7b7f989ca67726a08ceb9d85334df87f5eb40e0a4',
+        adminTab: 'produk',
+        adminSceneId: 'tamu',
+        adminHotspotProductId: '',
+        adminSearch: '',
+        adminDragIdx: null,
+        adminJustDragged: false,
+        productForm: null,
+        productFormIsNew: false,
+        sceneForm: null,
+        sceneFormIsNew: false,
+        defaultSceneImages: {},
+        storageKey: 'kalakarsa-admin-v1',
+
+        async sha256(text) {
+          if (!(window.crypto && crypto.subtle)) throw new Error('nosubtle');
+          const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+          return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        },
+
+        credHash(user, pass) {
+          return this.sha256(this.credSalt + user.trim().toLowerCase() + ':' + pass);
+        },
+
+        storedCredHash() {
+          try { return localStorage.getItem(this.credStoreKey) || this.defaultCredHash; } catch (e) { return this.defaultCredHash; }
+        },
+
+        isAuthed() {
+          if (this.useSupabase) return this.sbAuthed;
+          try { return sessionStorage.getItem(this.sessionKey) === '1'; } catch (e) { return false; }
+        },
+
+        async initAuth() {
+          window.addEventListener('hashchange', () => this.routeAdmin());
+          if (this.useSupabase) {
+            try {
+              const { data } = await SB.auth.getSession();
+              this.sbAuthed = !!(data && data.session) && await this.verifyAdmin();
+              if (data && data.session && !this.sbAuthed) await SB.auth.signOut();
+            } catch (e) { this.sbAuthed = false; }
+          }
+          this.routeAdmin();
+        },
+
+        routeAdmin() {
+          if (location.hash !== '#admin') return;
+          if (this.isAuthed()) this.openAdmin();
+          else { this.showLogin = true; this.loginError = ''; }
+        },
+
+        clearAdminHash() {
+          if (location.hash === '#admin') history.replaceState(null, '', location.pathname + location.search);
+        },
+
+        async submitLogin() {
+          if (this.loginBusy) return;
+          const now = Date.now();
+          if (now < this.loginLockUntil) {
+            this.loginError = `Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil((this.loginLockUntil - now) / 1000)} detik.`;
+            return;
+          }
+          if (!this.loginUser.trim() || !this.loginPass) { this.loginError = 'Isi username dan password.'; return; }
+          this.loginBusy = true;
+          if (this.useSupabase) {
+            try {
+              const { error } = await SB.auth.signInWithPassword({ email: this.loginUser.trim(), password: this.loginPass });
+              if (error) {
+                this.loginFails++;
+                this.loginError = 'Email atau password salah.';
+              } else if (!(await this.verifyAdmin())) {
+                await SB.auth.signOut();
+                this.loginError = 'Akun ini bukan admin toko.';
+              } else {
+                this.sbAuthed = true;
+                this.loginFails = 0; this.loginUser = ''; this.loginPass = ''; this.loginError = '';
+                this.showLogin = false;
+                this.openAdmin();
+              }
+              if (this.loginFails >= 5) {
+                this.loginLockUntil = Date.now() + 30000;
+                this.loginFails = 0;
+                this.loginError = 'Terlalu banyak percobaan. Coba lagi dalam 30 detik.';
+              }
+            } catch (e) {
+              this.loginError = 'Tidak bisa terhubung ke Supabase. Cek koneksi dan konfigurasi.';
+            }
+            this.loginBusy = false;
+            return;
+          }
+          try {
+            const h = await this.credHash(this.loginUser, this.loginPass);
+            if (h === this.storedCredHash()) {
+              try { sessionStorage.setItem(this.sessionKey, '1'); } catch (e) {}
+              this.loginFails = 0;
+              this.loginUser = '';
+              this.loginPass = '';
+              this.loginError = '';
+              this.showLogin = false;
+              this.openAdmin();
+            } else {
+              this.loginFails++;
+              if (this.loginFails >= 5) {
+                this.loginLockUntil = Date.now() + 30000;
+                this.loginFails = 0;
+                this.loginError = 'Terlalu banyak percobaan. Coba lagi dalam 30 detik.';
+              } else {
+                this.loginError = 'Username atau password salah.';
+              }
+            }
+          } catch (e) {
+            this.loginError = 'Login butuh koneksi aman (https) atau localhost. Buka lewat alamat situs yang aman.';
+          }
+          this.loginBusy = false;
+        },
+
+        closeLogin() {
+          this.showLogin = false;
+          this.loginError = '';
+          this.loginPass = '';
+          this.clearAdminHash();
+        },
+
+        /* ===== Bonus: filter, urut, favorit, keranjang, CSV ===== */
+        get catCategories() {
+          return [...new Set(this.savedProducts.map(p => (p.category || '').trim()).filter(Boolean))];
+        },
+        get catFiltered() {
+          const q = this.catSearch.trim().toLowerCase();
+          let list = this.savedProducts.filter(p =>
+            (!this.catCategory || p.category === this.catCategory) &&
+            (!this.onlyFavs || this.favs.includes(p.id)) &&
+            (!q || (p.name + ' ' + (p.description || '')).toLowerCase().includes(q)));
+          if (this.catSort === 'murah') list = [...list].sort((a, b) => a.price - b.price);
+          else if (this.catSort === 'mahal') list = [...list].sort((a, b) => b.price - a.price);
+          else if (this.catSort === 'nama') list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'id'));
+          return list;
+        },
+        get relatedProducts() {
+          const d = this.detailProduct; if (!d) return [];
+          return this.savedProducts.filter(p => p.id !== d.id && p.category === d.category).slice(0, 3);
+        },
+        get recentProducts() {
+          return this.recent.map(id => this.savedProducts.find(p => p.id === id)).filter(Boolean);
+        },
+        get adminStats() {
+          const ps = this.savedProducts;
+          return {
+            produk: ps.length,
+            stok: ps.reduce((n, p) => n + (+p.stock || 0), 0),
+            habis: ps.filter(p => !(p.stock > 0)).length,
+            nilai: ps.reduce((n, p) => n + (+p.price || 0) * (+p.stock || 0), 0),
+            kategori: new Set(ps.map(p => p.category).filter(Boolean)).size,
+            ruangan: this.scenes.length,
+            tanda: this.scenes.reduce((n, sc) => n + (sc.hotspots || []).length, 0),
+            terendah: [...ps].filter(p => p.stock > 0 && p.stock <= 5).sort((a, b) => a.stock - b.stock).slice(0, 5)
+          };
+        },
+        loadLocalPrefs() {
+          try { this.recent = JSON.parse(localStorage.getItem('kalakarsa-recent') || '[]'); } catch (e) { this.recent = []; }
+          if (!Array.isArray(this.recent)) this.recent = [];
+          try { this.favs = JSON.parse(localStorage.getItem('kalakarsa-fav') || '[]'); } catch (e) { this.favs = []; }
+          try { this.cart = JSON.parse(localStorage.getItem('kalakarsa-cart') || '[]'); } catch (e) { this.cart = []; }
+          if (!Array.isArray(this.favs)) this.favs = [];
+          if (!Array.isArray(this.cart)) this.cart = [];
+        },
+        savePrefs() {
+          try { localStorage.setItem('kalakarsa-fav', JSON.stringify(this.favs)); localStorage.setItem('kalakarsa-cart', JSON.stringify(this.cart)); } catch (e) {}
+        },
+        toggleFav(p) {
+          this.favs = this.favs.includes(p.id) ? this.favs.filter(i => i !== p.id) : [...this.favs, p.id];
+          this.savePrefs();
+        },
+        addCart(p) {
+          const row = this.cart.find(c => c.id === p.id);
+          if (row) { if (row.qty < p.stock) row.qty++; } else if (p.stock > 0) this.cart.push({ id: p.id, qty: 1 });
+          this.savePrefs();
+          this.statusBanner = p.name + ' masuk keranjang.';
+        },
+        cartRows() {
+          return this.cart.map(c => ({ ...c, p: this.savedProducts.find(x => x.id === c.id) })).filter(r => r.p);
+        },
+        cartCount() { return this.cartRows().reduce((n, r) => n + r.qty, 0); },
+        cartTotal() { return this.cartRows().reduce((n, r) => n + r.qty * r.p.price, 0); },
+        cartQty(id, d) {
+          const row = this.cart.find(c => c.id === id); if (!row) return;
+          const p = this.savedProducts.find(x => x.id === id);
+          row.qty = Math.min(p ? p.stock : row.qty, row.qty + d);
+          if (row.qty <= 0) this.cart = this.cart.filter(c => c.id !== id);
+          this.savePrefs();
+        },
+        cartLink() {
+          const lines = this.cartRows().map(r => `- ${r.p.name} x${r.qty} = ${this.formatRupiah(r.qty * r.p.price)}`);
+          const text = `Halo Kala & Karsa, saya ingin memesan:\n${lines.join('\n')}\nTotal: ${this.formatRupiah(this.cartTotal())}\nApakah stoknya tersedia?`;
+          return `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(text)}`;
+        },
+        exportCsv() {
+          const cols = ['id', 'name', 'category', 'price', 'stock', 'sku', 'material', 'color', 'dimension', 'weight', 'warranty', 'description'];
+          const esc = (v) => {
+            let t = String(v ?? '');
+            if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; // cegah formula injection di Excel
+            return '"' + t.replace(/"/g, '""') + '"';
+          };
+          const csv = '\uFEFF' + [cols.join(',')].concat(this.savedProducts.map(p => cols.map(c => esc(p[c])).join(','))).join('\r\n');
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+          a.download = 'produk-kala-karsa.csv';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        },
+
+        setNoindex(on) {
+          let m = document.querySelector('meta[name="robots"]');
+          if (on) {
+            if (!m) { m = document.createElement('meta'); m.name = 'robots'; document.head.appendChild(m); }
+            m.content = 'noindex, nofollow';
+          } else if (m) { m.remove(); }
+        },
+
+        openAdmin() {
+          if (!this.isAuthed()) { this.showLogin = true; return; }
+          this.adminUnlocked = true;
+          this.setNoindex(true);
+          this.activeMode = 'admin';
+          this.statusBanner = '';
+          this.migrateHotspots();
+          if (!this.scenes.some(sc => sc.id === this.adminSceneId)) this.adminSceneId = this.scenes[0]?.id;
+        },
+
+        logoutAdmin() {
+          try { sessionStorage.removeItem(this.sessionKey); } catch (e) {}
+          if (this.useSupabase) { this.sbAuthed = false; SB.auth.signOut().catch(() => {}); }
+          this.adminUnlocked = false;
+          this.setNoindex(false);
+          this.productForm = null;
+          this.sceneForm = null;
+          this.credForm = null;
+          this.clearAdminHash();
+          this.switchMode('katalog');
+          this.statusBanner = 'Anda sudah keluar dari admin.';
+        },
+
+        openCredForm() {
+          this.credForm = { user: '', pass: '', pass2: '', error: '' };
+        },
+
+        async saveCred() {
+          const f = this.credForm;
+          if (!f) return;
+          if (!this.useSupabase && !f.user.trim()) { f.error = 'Username wajib diisi.'; return; }
+          if (f.pass.length < 6) { f.error = 'Password minimal 6 karakter.'; return; }
+          if (f.pass !== f.pass2) { f.error = 'Ulangi password tidak sama.'; return; }
+          if (this.useSupabase) {
+            const { error } = await SB.auth.updateUser({ password: f.pass });
+            if (error) { f.error = error.message; return; }
+            this.credForm = null;
+            this.statusBanner = 'Password admin berhasil diganti.';
+            return;
+          }
+          try {
+            const h = await this.credHash(f.user, f.pass);
+            localStorage.setItem(this.credStoreKey, h);
+            this.credForm = null;
+            this.statusBanner = 'Username dan password admin berhasil diganti. Gunakan yang baru saat login berikutnya.';
+          } catch (e) {
+            f.error = 'Tidak bisa menyimpan (butuh koneksi aman https atau localhost).';
+          }
+        },
+
+        get adminScene() {
+          return this.scenes.find(sc => sc.id === this.adminSceneId) || this.scenes[0] || { id: '', label: '', image: '', hotspots: [] };
+        },
+
+        get adminFilteredProducts() {
+          const q = this.adminSearch.trim().toLowerCase();
+          return this.savedProducts.filter(p => !q || (p.name + ' ' + (p.category || '') + ' ' + (p.sku || '')).toLowerCase().includes(q));
+        },
+
+        adminProductName(id) {
+          const p = this.savedProducts.find(x => String(x.id) === String(id));
+          return p ? p.name : '(produk dihapus)';
+        },
+
+        normalizeImageUrl(url) {
+          const u = (url || '').trim();
+          if (!u) return '';
+          if (/drive\.google\.com/.test(u)) {
+            const m = u.match(/\/d\/([\w-]+)/) || u.match(/[?&]id=([\w-]+)/);
+            if (m) return this.driveImageUrl(m[1]);
+          }
+          return u;
+        },
+
+        adminFormImage(kind) {
+          const f = kind === 'scene' ? this.sceneForm : this.productForm;
+          if (!f) return '';
+          return f.imageData || this.normalizeImageUrl(f.imageText);
+        },
+
+        adminUploadImage(event, kind) {
+          const file = event.target.files && event.target.files[0];
+          if (!file) return;
+          const f = kind === 'scene' ? this.sceneForm : this.productForm;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+              const maxSide = kind === 'scene' ? 1600 : 900;
+              const k = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+              const c = document.createElement('canvas');
+              c.width = Math.round(img.naturalWidth * k);
+              c.height = Math.round(img.naturalHeight * k);
+              const ctx = c.getContext('2d');
+              const png = file.type === 'image/png' && kind === 'product';
+              if (!png) { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, c.width, c.height); }
+              ctx.drawImage(img, 0, 0, c.width, c.height);
+              const type = png ? 'image/png' : 'image/jpeg';
+              if (this.useSupabase) {
+                this.statusBanner = 'Mengunggah foto ke Supabase Storage…';
+                c.toBlob(async blob => {
+                  try {
+                    f.imageData = await this.uploadToStorage(blob, kind === 'scene' ? 'scenes' : 'products');
+                    f.imageText = '';
+                    this.statusBanner = 'Foto terunggah. Klik Simpan untuk menerapkan.';
+                  } catch (e) {
+                    this.statusBanner = 'Gagal mengunggah foto. Coba lagi atau gunakan foto lain.';
+                  }
+                }, type, 0.85);
+                return;
+              }
+              f.imageData = c.toDataURL(type, 0.85);
+              f.imageText = '';
+            };
+            img.src = reader.result;
+          };
+          reader.readAsDataURL(file);
+        },
+
+        fallbackFor(p) {
+          const c = (p.category || '').toUpperCase();
+          if (p.id === 2 || c === 'SOFA') return this.renderStudioProduct('sofa');
+          if (c === 'KURSI') return this.renderStudioProduct('kursi');
+          return this.renderFurnitureIcon('mejaMakan');
+        },
+
+        saveStore() {
+          if (this.useSupabase) { this.queueSync(); return; }
+          try {
+            const products = this.savedProducts.map(p => {
+              const o = { ...p };
+              if (o.iconOnly) o.imageUrl = null;
+              delete o.fallbackUrl;
+              return o;
+            });
+            const scenes = this.scenes.map(sc => ({
+              ...sc,
+              hotspots: (sc.hotspots || []).map(h => ({ productId: h.productId, x: Number(h.x), y: Number(h.y) })),
+              image: sc.image === this.defaultSceneImages[sc.id] ? null : sc.image
+            }));
+            localStorage.setItem(this.storageKey, JSON.stringify({ products, scenes }));
+          } catch (e) {
+            this.statusBanner = 'Perubahan tidak bisa disimpan permanen (penyimpanan browser penuh). Pakai link gambar, bukan unggah file, atau kecilkan foto.';
+          }
+        },
+
+        loadStore() {
+          this.defaultSceneImages = Object.fromEntries(this.scenes.map(sc => [sc.id, sc.image]));
+          try {
+            const raw = localStorage.getItem(this.storageKey);
+            if (!raw) return;
+            const d = JSON.parse(raw);
+            if (Array.isArray(d.products)) {
+              this.savedProducts = d.products.map(p => {
+                const fb = this.fallbackFor(p);
+                return { ...p, fallbackUrl: fb, imageUrl: p.imageUrl || fb, transparentBg: p.transparentBg !== false };
+              });
+            }
+            if (Array.isArray(d.scenes) && d.scenes.length) {
+              this.scenes = d.scenes.map(sc => ({ ...sc, hotspots: sc.hotspots || [], image: sc.image || this.defaultSceneImages[sc.id] || '' }));
+              if (!this.scenes.some(sc => sc.id === this.currentSceneId)) {
+                this.currentSceneId = this.scenes[0].id;
+                this.sceneGroup = this.scenes[0].group;
+              }
+            }
+          } catch (e) { /* data rusak: abaikan, pakai bawaan */ }
+        },
+
+        /* ============ SUPABASE ============ */
+        async verifyAdmin() {
+          const { data: u } = await SB.auth.getUser();
+          const email = (u && u.user && u.user.email || '').toLowerCase();
+          if (!email) return false;
+          const { data, error } = await SB.from('admins').select('email').eq('email', email).maybeSingle();
+          return !error && !!data;
+        },
+
+        rowToProduct(r) {
+          const base = { id: Number(r.id), category: r.category || '' };
+          const fb = this.fallbackFor(base);
+          return {
+            id: Number(r.id), name: r.name, category: r.category || '', price: Number(r.price) || 0, stock: Number(r.stock) || 0,
+            description: r.description || '', sku: r.sku || '', material: r.material || '', color: r.color || '',
+            dimension: r.dimension || '', weight: r.weight || '', warranty: r.warranty || '',
+            features: Array.isArray(r.features) ? r.features : [],
+            imageUrl: r.image_url || fb, fallbackUrl: fb, iconOnly: !r.image_url, transparentBg: r.transparent_bg !== false
+          };
+        },
+
+        productToRow(p, sort) {
+          const url = p.imageUrl && !p.iconOnly && !String(p.imageUrl).startsWith('data:') ? p.imageUrl : null;
+          return {
+            id: p.id, name: p.name, category: p.category || null, price: Number(p.price) || 0, stock: Number(p.stock) || 0,
+            description: p.description || null, sku: p.sku || null, material: p.material || null, color: p.color || null,
+            dimension: p.dimension || null, weight: p.weight || null, warranty: p.warranty || null,
+            features: p.features || [], image_url: url, transparent_bg: p.transparentBg !== false,
+            sort, updated_at: new Date().toISOString()
+          };
+        },
+
+        async loadFromSupabase() {
+          try {
+            const [p, sc] = await Promise.all([
+              SB.from('products').select('*').order('sort', { ascending: true }).order('id', { ascending: true }),
+              SB.from('scenes').select('*').order('sort', { ascending: true })
+            ]);
+            if (p.error || sc.error) throw (p.error || sc.error);
+            if (p.data.length) this.savedProducts = p.data.map(r => this.rowToProduct(r));
+            if (sc.data.length) {
+              this.scenes = sc.data.map(r => ({
+                id: r.id, group: r.grp || 'indoor', label: r.label,
+                image: r.image_url || this.defaultSceneImages[r.id] || '',
+                hotspots: Array.isArray(r.hotspots) ? r.hotspots : []
+              }));
+              if (!this.scenes.some(s => s.id === this.currentSceneId)) {
+                this.currentSceneId = this.scenes[0].id;
+                this.sceneGroup = this.scenes[0].group;
+              }
+            }
+            if (!this.savedProducts.some(x => x.id === this.activeSavedProductId)) this.activeSavedProductId = this.savedProducts[0]?.id ?? null;
+          } catch (e) {
+            /* gagal memuat: pakai data bawaan, tanpa mencetak detail error */
+          }
+        },
+
+        queueSync() {
+          this.syncState = 'saving';
+          clearTimeout(this.syncTimer);
+          this.syncTimer = setTimeout(() => this.syncAll(), 600);
+        },
+
+        async syncAll() {
+          if (!SB) return;
+          this.syncState = 'saving';
+          try {
+            const prods = this.savedProducts.filter(p => Number.isInteger(p.id)).map((p, i) => this.productToRow(p, i));
+            const scs = this.scenes.map((sc, i) => ({
+              id: String(sc.id), label: sc.label, grp: sc.group,
+              image_url: sc.image && !String(sc.image).startsWith('data:') ? sc.image : null,
+              hotspots: (sc.hotspots || []).filter(h => Number.isInteger(h.productId)).map(h => ({ productId: h.productId, x: Number(h.x), y: Number(h.y) })),
+              sort: i, updated_at: new Date().toISOString()
+            }));
+            if (prods.length) { const r = await SB.from('products').upsert(prods); if (r.error) throw r.error; }
+            if (scs.length) { const r = await SB.from('scenes').upsert(scs); if (r.error) throw r.error; }
+            this.syncState = 'saved';
+          } catch (e) {
+            this.syncState = 'error';
+            this.statusBanner = 'Gagal menyimpan. Pastikan sudah login sebagai admin dan supabase-setup.sql sudah dijalankan.';
+          }
+        },
+
+        async seedToSupabase() {
+          if (!confirm('Kirim semua produk dan ruangan yang tampil sekarang ke database Supabase? Data dengan ID yang sama akan ditimpa.')) return;
+          clearTimeout(this.syncTimer);
+          await this.syncAll();
+          if (this.syncState === 'saved') this.statusBanner = 'Data berhasil dikirim ke Supabase. Sekarang semua pengunjung melihat data ini.';
+        },
+
+        async dbDelete(table, id) {
+          if (!SB || !this.useSupabase) return;
+          if (table === 'products' && !Number.isInteger(id)) return;
+          try {
+            const r = await SB.from(table).delete().eq('id', id);
+            if (r.error) throw r.error;
+          } catch (e) {
+            this.syncState = 'error';
+            this.statusBanner = 'Gagal menghapus data. Coba lagi.';
+          }
+        },
+
+        async uploadToStorage(blob, folder) {
+          const ext = blob.type === 'image/png' ? 'png' : 'jpg';
+          const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          const { error } = await SB.storage.from('images').upload(path, blob, { contentType: blob.type, cacheControl: '31536000' });
+          if (error) throw error;
+          return SB.storage.from('images').getPublicUrl(path).data.publicUrl;
+        },
+
+        migrateHotspots() {
+          // produk hasil crop (hotspotX) dipindah menjadi tanda (+) biasa di ruangan 'tamu' agar bisa diedit
+          const tamu = this.scenes.find(sc => sc.id === 'tamu');
+          if (!tamu) return;
+          tamu.hotspots = tamu.hotspots || [];
+          this.savedProducts.forEach(p => {
+            if (p.hotspotX !== undefined && !tamu.hotspots.some(h => h.productId === p.id)) {
+              tamu.hotspots.push({ productId: p.id, x: p.hotspotX, y: p.hotspotY });
+            }
+            p.hotspotX = undefined;
+            p.hotspotY = undefined;
+          });
+        },
+
+        resetAdminData() {
+          if (!confirm('Kembalikan semua produk dan tanda (+) ke data bawaan? Perubahan admin akan hilang.')) return;
+          try { localStorage.removeItem(this.storageKey); } catch (e) {}
+          location.reload();
+        },
+
+        /* ---- Produk ---- */
+        newProductForm() {
+          this.productFormIsNew = true;
+          this.productForm = {
+            id: null, name: '', category: 'MEJA', price: 0, stock: 1, description: '', sku: '',
+            material: '', color: '', dimension: '', weight: '', warranty: '', featuresText: '',
+            imageText: '', imageData: ''
+          };
+        },
+
+        editProduct(p) {
+          this.productFormIsNew = false;
+          const isData = (p.imageUrl || '').startsWith('data:');
+          this.productForm = {
+            ...p,
+            featuresText: (p.features || []).join('\n'),
+            imageText: p.iconOnly || isData ? '' : (p.imageUrl || ''),
+            imageData: !p.iconOnly && isData ? p.imageUrl : ''
+          };
+        },
+
+        saveProduct() {
+          const f = this.productForm;
+          if (!f) return;
+          const name = (f.name || '').trim();
+          if (!name) { alert('Nama produk wajib diisi.'); return; }
+          const fields = {
+            name,
+            category: (f.category || 'LAINNYA').trim().toUpperCase(),
+            price: Math.max(0, Number(f.price) || 0),
+            stock: Math.max(0, Math.floor(Number(f.stock) || 0)),
+            description: (f.description || '').trim(),
+            sku: (f.sku || '').trim(),
+            material: (f.material || '').trim(),
+            color: (f.color || '').trim(),
+            dimension: (f.dimension || '').trim(),
+            weight: (f.weight || '').trim(),
+            warranty: (f.warranty || '').trim(),
+            features: (f.featuresText || '').split('\n').map(s => s.trim()).filter(Boolean)
+          };
+          const img = f.imageData || this.normalizeImageUrl(f.imageText);
+          let target;
+          if (this.productFormIsNew) {
+            const maxId = Math.max(0, ...this.savedProducts.map(p => p.id).filter(Number.isInteger));
+            target = { id: maxId + 1, transparentBg: true };
+            if (!fields.sku) fields.sku = 'KK-' + fields.category.slice(0, 3) + '-' + String(target.id).padStart(3, '0');
+            Object.assign(target, fields);
+          } else {
+            target = this.savedProducts.find(p => p.id === f.id);
+            if (!target) { this.productForm = null; return; }
+            Object.assign(target, fields);
+          }
+          target.fallbackUrl = this.fallbackFor(target);
+          if (img) { target.imageUrl = img; target.iconOnly = false; }
+          else { target.imageUrl = target.fallbackUrl; target.iconOnly = true; }
+          if (this.productFormIsNew) this.savedProducts.push(target);
+          this.productForm = null;
+          this.saveStore();
+          this.statusBanner = `Produk "${name}" tersimpan. Buka tab "Ruangan & Tanda (+)" untuk menandainya di foto ruangan.`;
+        },
+
+        deleteProduct(p) {
+          if (!confirm(`Hapus produk "${p.name}"? Tanda (+) dan penempatannya di simulasi ikut dihapus.`)) return;
+          this.savedProducts = this.savedProducts.filter(x => x.id !== p.id);
+          this.dbDelete('products', p.id);
+          this.scenes.forEach(sc => { sc.hotspots = (sc.hotspots || []).filter(h => h.productId !== p.id); });
+          this.placedItems = this.placedItems.filter(x => x.productId !== p.id);
+          if (this.catalogSelectedProduct && this.catalogSelectedProduct.id === p.id) this.catalogSelectedProduct = null;
+          if (this.detailProduct && this.detailProduct.id === p.id) this.detailProduct = null;
+          if (this.activeSavedProductId === p.id) this.activeSavedProductId = this.savedProducts[0]?.id ?? null;
+          this.saveStore();
+          this.statusBanner = `Produk "${p.name}" dihapus.`;
+        },
+
+        /* ---- Tanda (+) ---- */
+        placeHotspot(event) {
+          if (this.adminJustDragged) { this.adminJustDragged = false; return; }
+          const prod = this.savedProducts.find(p => String(p.id) === String(this.adminHotspotProductId));
+          if (!prod) { this.statusBanner = 'Pilih dulu produk yang mau ditandai di panel kanan, lalu klik foto.'; return; }
+          const rect = event.currentTarget.getBoundingClientRect();
+          const x = Math.min(100, Math.max(0, Math.round(((event.clientX - rect.left) / rect.width) * 1000) / 10));
+          const y = Math.min(100, Math.max(0, Math.round(((event.clientY - rect.top) / rect.height) * 1000) / 10));
+          const sc = this.adminScene;
+          sc.hotspots = sc.hotspots || [];
+          const existing = sc.hotspots.find(h => h.productId === prod.id);
+          if (existing) { existing.x = x; existing.y = y; }
+          else sc.hotspots.push({ productId: prod.id, x, y });
+          this.saveStore();
+          this.statusBanner = `Tanda (+) "${prod.name}" di ${sc.label}: x ${x}%, y ${y}%.`;
+        },
+
+        startDragHotspot(event, idx) {
+          this.adminDragIdx = idx;
+          this.adminJustDragged = false;
+          const h = this.adminScene.hotspots[idx];
+          if (h) this.adminHotspotProductId = h.productId;
+          try { event.currentTarget.setPointerCapture(event.pointerId); } catch (e) {}
+        },
+
+        dragHotspot(event) {
+          if (this.adminDragIdx === null) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          const h = this.adminScene.hotspots[this.adminDragIdx];
+          if (!h) return;
+          h.x = Math.min(100, Math.max(0, Math.round(((event.clientX - rect.left) / rect.width) * 1000) / 10));
+          h.y = Math.min(100, Math.max(0, Math.round(((event.clientY - rect.top) / rect.height) * 1000) / 10));
+          this.adminJustDragged = true;
+        },
+
+        endDragHotspot() {
+          if (this.adminDragIdx === null) return;
+          this.adminDragIdx = null;
+          this.saveStore();
+          setTimeout(() => { this.adminJustDragged = false; }, 0);
+        },
+
+        removeHotspot(idx) {
+          this.adminScene.hotspots.splice(idx, 1);
+          this.saveStore();
+        },
+
+        /* ---- Ruangan ---- */
+        newSceneForm() {
+          this.sceneFormIsNew = true;
+          this.sceneForm = { id: null, label: '', group: 'indoor', imageText: '', imageData: '' };
+        },
+
+        editSceneForm(sc) {
+          this.sceneFormIsNew = false;
+          const isData = (sc.image || '').startsWith('data:');
+          this.sceneForm = { id: sc.id, label: sc.label, group: sc.group, imageText: isData ? '' : sc.image, imageData: isData ? sc.image : '' };
+        },
+
+        saveScene() {
+          const f = this.sceneForm;
+          if (!f) return;
+          const label = (f.label || '').trim();
+          const img = f.imageData || this.normalizeImageUrl(f.imageText);
+          if (!label) { alert('Nama ruangan wajib diisi.'); return; }
+          if (!img) { alert('Foto ruangan wajib diisi (link atau unggah file).'); return; }
+          if (this.sceneFormIsNew) {
+            const id = 'r' + Date.now();
+            this.scenes.push({ id, group: f.group, label, image: img, hotspots: [] });
+            this.adminSceneId = id;
+          } else {
+            const sc = this.scenes.find(s => s.id === f.id);
+            if (sc) Object.assign(sc, { label, group: f.group, image: img });
+          }
+          this.sceneForm = null;
+          this.saveStore();
+          this.statusBanner = `Ruangan "${label}" tersimpan.`;
+        },
+
+        deleteScene(sc) {
+          if (this.scenes.length <= 1) { alert('Minimal harus ada satu ruangan.'); return; }
+          if (!confirm(`Hapus ruangan "${sc.label}" beserta tanda (+)-nya?`)) return;
+          this.scenes = this.scenes.filter(s => s.id !== sc.id);
+          this.dbDelete('scenes', sc.id);
+          this.adminSceneId = this.scenes[0].id;
+          if (this.currentSceneId === sc.id) {
+            this.currentSceneId = this.scenes[0].id;
+            this.sceneGroup = this.scenes[0].group;
+            this.catalogSelectedProduct = null;
+          }
+          this.saveStore();
+          this.statusBanner = `Ruangan "${sc.label}" dihapus.`;
+        },
+
         init() {
+          this.loadLocalPrefs();
+          window.addEventListener('hashchange', () => this.openFromHash());
+          setTimeout(() => this.openFromHash(), 600);
           this.simulationRoomImage = '';
+          if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+            SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            this.useSupabase = true;
+          }
 
           // Foto produk dari Google Drive (file harus dibagikan "Siapa saja yang memiliki link")
           const kursiDriveUrl = this.driveImageUrl('1cjSEsuxE4NVIu3RjaAPY2-krVXBDd_sa');
@@ -683,16 +1806,19 @@
           };
 
           // Produk tambahan untuk ruang makan, taman, dan halaman depan (ilustrasi bisa diganti foto asli)
-          const mk = (id, name, category, price, stock, description, type) => {
-            const img = this.renderFurnitureIcon(type);
-            return { id, name, category, price, stock, description, imageUrl: img, fallbackUrl: img, transparentBg: true };
+          const mk = (id, name, category, price, stock, description, type, driveId) => {
+            const icon = this.renderFurnitureIcon(type);
+            const img = driveId ? this.driveImageUrl(driveId) : icon;
+            return { id, name, category, price, stock, description, imageUrl: img, fallbackUrl: icon, transparentBg: true, iconOnly: !driveId };
           };
-          const mejaMakan = mk(3, 'Meja Makan Kayu Jati', 'MEJA', 3250000, 5, 'Meja makan kayu jati finishing natural untuk 4–6 orang, rangka kokoh dengan permukaan halus.', 'mejaMakan');
-          const kursiMakan = mk(4, 'Kursi Makan Kayu Jati', 'KURSI', 650000, 24, 'Kursi makan kayu jati dengan sandaran lamel yang nyaman, serasi dengan meja makan.', 'kursiMakan');
-          const mejaTaman = mk(5, 'Meja Taman Besi Bulat', 'MEJA', 1850000, 6, 'Meja bulat rangka besi hitam tahan cuaca untuk taman, teras, dan halaman.', 'mejaBulat');
-          const kursiTaman = mk(6, 'Kursi Taman Besi', 'KURSI', 720000, 14, 'Kursi besi hitam bergaya klasik, kuat dan cocok untuk ruang terbuka.', 'kursiTaman');
+          const mejaMakan = mk(3, 'Meja Makan Kayu Jati', 'MEJA', 3250000, 5, 'Meja makan kayu jati finishing natural untuk 4–6 orang, rangka kokoh dengan permukaan halus.', 'mejaMakan', '1f4WK9mmB96L0pQ6usBWoaH1ctht6KL7v');
+          const kursiMakan = mk(4, 'Kursi Makan Kayu Jati', 'KURSI', 650000, 24, 'Kursi makan kayu jati dengan sandaran lamel yang nyaman, serasi dengan meja makan.', 'kursiMakan', '1RN7sPjIs0WsIQrmSM-hu2S24HghCnEpW');
+          const mejaTaman = mk(5, 'Meja Taman Besi Bulat', 'MEJA', 1850000, 6, 'Meja bulat rangka besi hitam tahan cuaca untuk taman, teras, dan halaman.', 'mejaBulat', '1WOHNg-5KozdRkamuoe3JQCueP7f_HWuk');
+          const kursiTaman = mk(6, 'Kursi Taman Besi', 'KURSI', 720000, 14, 'Kursi besi hitam bergaya klasik, kuat dan cocok untuk ruang terbuka.', 'kursiTaman', '1J_xPu7wbmV7sXmSSCPx95iYavn5Prm3q');
+          const mejaHalaman = mk(7, 'Meja Halaman Depan', 'MEJA', 1650000, 8, 'Meja untuk halaman depan dan teras, kokoh dan tahan cuaca.', 'mejaBulat', '1KIiEv8q9BUU4kgGPMeUneRSZYzuqDeIm');
+          const kursiHalaman = mk(8, 'Kursi Halaman Depan', 'KURSI', 620000, 16, 'Kursi untuk halaman depan dan teras, nyaman dan tahan cuaca.', 'kursiTaman', '1uOXsyupiZXFfovfFPDLckNxI3oE4NfFU');
 
-          this.savedProducts = [kursiPutih, sofaCoklat, mejaMakan, kursiMakan, mejaTaman, kursiTaman];
+          this.savedProducts = [kursiPutih, sofaCoklat, mejaMakan, kursiMakan, mejaTaman, kursiTaman, mejaHalaman, kursiHalaman];
 
           // Data spesifikasi (contoh, sesuaikan dengan produk asli)
           const meta = {
@@ -701,6 +1827,8 @@
             3: { sku: 'KK-MJA-003', material: 'Kayu jati solid, finishing natural', color: 'Natural', dimension: '160 × 90 × 75 cm', weight: '32 kg', warranty: '12 bulan', features: ['Kayu jati solid', 'Muat 4–6 orang', 'Permukaan halus mudah dibersihkan'] },
             4: { sku: 'KK-KRS-004', material: 'Kayu jati solid', color: 'Natural', dimension: '45 × 50 × 90 cm', weight: '5 kg', warranty: '12 bulan', features: ['Sandaran lamel nyaman', 'Serasi dengan meja makan', 'Kuat dan tahan lama'] },
             5: { sku: 'KK-MJA-005', material: 'Besi hollow, cat powder coating', color: 'Hitam', dimension: 'Ø 80 × 72 cm', weight: '9 kg', warranty: '6 bulan', features: ['Tahan cuaca', 'Bisa dilipat untuk disimpan', 'Cocok untuk taman dan teras'] },
+            7: { sku: 'KK-MJA-007', material: 'Sesuai foto produk', color: 'Sesuai foto produk', dimension: '-', weight: '-', warranty: '6 bulan', features: ['Cocok untuk halaman depan dan teras', 'Tahan cuaca'] },
+            8: { sku: 'KK-KRS-008', material: 'Sesuai foto produk', color: 'Sesuai foto produk', dimension: '-', weight: '-', warranty: '6 bulan', features: ['Cocok untuk halaman depan dan teras', 'Nyaman dan kuat'] },
             6: { sku: 'KK-KRS-006', material: 'Besi, cat powder coating', color: 'Hitam', dimension: '42 × 45 × 88 cm', weight: '4 kg', warranty: '6 bulan', features: ['Ringan dan kuat', 'Tahan cuaca', 'Bisa ditumpuk'] }
           };
           this.savedProducts.forEach(p => Object.assign(p, meta[p.id] || {}));
@@ -710,14 +1838,23 @@
             { id: 'tamu', group: 'indoor', label: 'Ruang Tamu', image: this.initialRoomImage,
               hotspots: [{ productId: 1, x: 28, y: 62 }, { productId: 2, x: 76, y: 58 }] },
             { id: 'makan', group: 'indoor', label: 'Ruang Makan', image: unsplash('photo-1620207370579-ae2276efbdbe'),
-              hotspots: [{ productId: 3, x: 50, y: 62 }, { productId: 4, x: 30, y: 66 }] },
+              hotspots: [{ productId: 3, x: 58, y: 74 }, { productId: 4, x: 40, y: 84 }] },
             { id: 'taman', group: 'outdoor', label: 'Taman', image: unsplash('photo-1633330948542-0b3bdeefcdb3'),
-              hotspots: [{ productId: 5, x: 50, y: 62 }, { productId: 6, x: 34, y: 68 }] },
+              hotspots: [{ productId: 5, x: 34, y: 68 }, { productId: 6, x: 50, y: 62 }] },
             { id: 'halaman', group: 'outdoor', label: 'Halaman Depan', image: unsplash('photo-1720706439286-a642d2cd0db2'),
-              hotspots: [{ productId: 5, x: 50, y: 68 }, { productId: 6, x: 36, y: 72 }] }
+              hotspots: [{ productId: 7, x: 50, y: 68 }, { productId: 8, x: 28, y: 76 }] }
           ];
           this.catalogSelectedProduct = null; // kartu baru muncul setelah tanda (+) diklik
           this.activeSavedProductId = kursiPutih.id;
+
+          if (this.useSupabase) {
+            this.defaultSceneImages = Object.fromEntries(this.scenes.map(sc => [sc.id, sc.image]));
+            this.loadFromSupabase().finally(() => this.migrateHotspots());
+          } else {
+            this.loadStore();
+            this.migrateHotspots();
+          }
+          this.initAuth();
         },
 
         applyFallbackImage(product) {
@@ -864,13 +2001,38 @@
           return this.savedProducts.find(p => p.id === this.activeSavedProductId) || null;
         },
 
+        productUrl(p) {
+          return location.origin + location.pathname + '#produk-' + p.id;
+        },
+        async shareProduct(p) {
+          const url = this.productUrl(p);
+          try {
+            if (navigator.share) { await navigator.share({ title: p.name, text: p.name + ' — Kala & Karsa', url }); return; }
+            await navigator.clipboard.writeText(url);
+            this.statusBanner = 'Link produk disalin: ' + url;
+          } catch (e) {
+            if (e && e.name === 'AbortError') return;
+            this.statusBanner = 'Tidak bisa menyalin otomatis. Salin dari bilah alamat setelah detail terbuka.';
+          }
+        },
+        openFromHash() {
+          const m = /^#produk-(\d+)$/.exec(location.hash);
+          if (!m) return;
+          const p = this.savedProducts.find(x => String(x.id) === m[1]);
+          if (p) { this.activeMode = 'katalog'; this.detailProduct = p; this.detailQty = 1; this.detailTab = 'deskripsi'; }
+        },
+
         openDetail(prod) {
+          try { history.replaceState(null, '', '#produk-' + prod.id); } catch (e) {}
+          this.recent = [prod.id, ...this.recent.filter(i => i !== prod.id)].slice(0, 4);
+          try { localStorage.setItem('kalakarsa-recent', JSON.stringify(this.recent)); } catch (e) {}
           this.detailProduct = prod;
           this.detailQty = 1;
           this.detailTab = 'deskripsi';
         },
 
         closeDetail() {
+          if (/^#produk-/.test(location.hash)) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
           this.detailProduct = null;
         },
 
@@ -1376,6 +2538,11 @@ Apakah stoknya tersedia?`;
           return `https://wa.me/${this.whatsappNumber}?text=${encodeURIComponent(text)}`;
         }
       };
+    }
+  </script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
     }
   </script>
 </body>
