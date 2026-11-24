@@ -68,9 +68,9 @@
       <div class="relative max-w-2xl space-y-4">
         <span class="inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md bg-amber-200/20 text-amber-100">Kriya &amp; Dekorasi Ruang</span>
         <h2 class="text-3xl sm:text-5xl font-bold leading-tight">Temukan furnitur, lihat langsung di ruanganmu.</h2>
-        <p class="text-sm sm:text-base text-stone-300 leading-relaxed">Jelajahi ruang contoh kami, klik tanda (+) untuk detail produk, lalu coba tempatkan di fotomu sendiri sebelum memesan.</p>
+        <p class="text-sm sm:text-base text-stone-300 leading-relaxed">Jelajahi ruang display kami, klik tanda (+) untuk detail produk, lalu coba tempatkan di fotomu sendiri sebelum memesan.</p>
         <div class="flex flex-wrap gap-2.5 pt-1">
-          <button type="button" @click="document.getElementById('bagian-ruang-contoh')?.scrollIntoView({ behavior: 'smooth' })" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-sm font-bold transition">Jelajahi Ruangan</button>
+          <button type="button" @click="document.getElementById('bagian-ruang-display')?.scrollIntoView({ behavior: 'smooth' })" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-sm font-bold transition">Jelajahi Ruangan</button>
           <button type="button" @click="switchMode('simulasi')" class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition">🛋️ Coba Simulasi</button>
         </div>
       </div>
@@ -87,7 +87,7 @@
     <section id="bagian-ruang-display" x-show="activeMode === 'katalog'" x-transition class="space-y-4 scroll-mt-20">
       <div class="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 class="font-bold text-xl text-stone-900" x-text="currentScene.label + ' Contoh'"></h2>
+          <h2 class="font-bold text-xl text-stone-900" x-text="currentScene.label + ' Display'"></h2>
           <p class="text-xs text-stone-500">Klik tanda <b>+</b> pada furnitur untuk melihat detailnya.</p>
         </div>
         <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-900" x-text="currentHotspots.length + ' produk bisa diklik'"></span>
