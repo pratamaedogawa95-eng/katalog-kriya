@@ -19,7 +19,15 @@ async function ambil(id) {
 
 export async function generateMetadata({ params }) {
   const p = await ambil((await params).id);
-  return p ? { title: p.nama, description: p.deskripsi || undefined } : {};
+  if (!p) return {};
+  const deskripsi = p.deskripsi || undefined;
+  const foto = /^https:\/\//.test(p.foto_url || "") ? [p.foto_url] : undefined;
+  return {
+    title: p.nama,
+    description: deskripsi,
+    openGraph: { title: p.nama, description: deskripsi, type: "website", images: foto },
+    twitter: { card: foto ? "summary_large_image" : "summary", title: p.nama, description: deskripsi },
+  };
 }
 
 export default async function Detail({ params }) {
@@ -37,7 +45,18 @@ export default async function Detail({ params }) {
             <h1 className="font-display text-3xl font-bold md:text-4xl">{p.nama}</h1>
             <p className="font-display text-3xl font-bold text-brand">{rupiah(p.harga)}</p>
             {p.deskripsi && <p className="max-w-prose leading-relaxed text-redam">{p.deskripsi}</p>}
-            <div className="pt-2"><TombolWhatsApp produk={p} /></div>
+            {(p.stok ?? 1) > 0 ? (
+              <p className="text-sm font-medium text-emerald-700">Stok tersedia: {p.stok ?? "–"}</p>
+            ) : (
+              <p className="w-fit rounded-md bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-700">Stok habis</p>
+            )}
+            <div className="pt-2">
+              {(p.stok ?? 1) > 0 ? (
+                <TombolWhatsApp produk={p} />
+              ) : (
+                <button type="button" disabled className="btn-brand w-full cursor-not-allowed py-3.5 text-base opacity-50 sm:w-auto">Stok habis</button>
+              )}
+            </div>
           </div>
         </div>
       </main>
