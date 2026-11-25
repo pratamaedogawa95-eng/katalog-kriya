@@ -4,19 +4,21 @@ import KartuProduk from "./KartuProduk";
 import TerakhirDilihat from "./TerakhirDilihat";
 import { rupiah } from "../lib/format";
 import { toko, linkWA } from "../lib/toko";
+import { PENGGUNAAN, slugKategori } from "../lib/produk";
 
-export default function Katalog({ produk }) {
+export default function Katalog({ produk, judul = "Daftar produk", intro, linkKategori = true }) {
   const [q, setQ] = useState("");
   const [kat, setKat] = useState("Semua");
   const [urut, setUrut] = useState("baru");
   const [stokF, setStokF] = useState("semua");
+  const [pakai, setPakai] = useState("semua");
   const [favOnly, setFavOnly] = useState(false);
   const [favs, setFavs] = useState([]);
   const [cart, setCart] = useState({});
   const [buka, setBuka] = useState(false);
   const [hal, setHal] = useState(1);
   const PER = 12; // produk per halaman
-  useEffect(() => { setHal(1); }, [q, kat, urut, stokF, favOnly]);
+  useEffect(() => { setHal(1); }, [q, kat, urut, stokF, pakai, favOnly]);
 
   useEffect(() => { try { setFavs(JSON.parse(localStorage.getItem("favorit") || "[]")); } catch {} }, []);
   const ubahFav = (id) => setFavs((f) => {
@@ -34,12 +36,12 @@ export default function Katalog({ produk }) {
   const kategori = useMemo(() => ["Semua", ...new Set(produk.map((p) => p.kategori).filter(Boolean))], [produk]);
   const tampil = useMemo(() => {
     const kata = q.trim().toLowerCase();
-    let l = produk.filter((p) => (kat === "Semua" || p.kategori === kat) && (stokF === "semua" || (stokF === "ada") === ((p.stok ?? 1) > 0)) && (!favOnly || favs.includes(p.id)) && `${p.nama} ${p.deskripsi || ""}`.toLowerCase().includes(kata));
+    let l = produk.filter((p) => (kat === "Semua" || p.kategori === kat) && (stokF === "semua" || (stokF === "ada") === ((p.stok ?? 1) > 0)) && (pakai === "semua" || p.penggunaan === pakai || p.penggunaan === "indoor-outdoor") && (!favOnly || favs.includes(p.id)) && `${p.nama} ${p.deskripsi || ""} ${p.bahan || ""} ${p.warna || ""}`.toLowerCase().includes(kata));
     if (urut === "murah") l = [...l].sort((a, b) => a.harga - b.harga);
     if (urut === "mahal") l = [...l].sort((a, b) => b.harga - a.harga);
     if (urut === "nama") l = [...l].sort((a, b) => a.nama.localeCompare(b.nama));
     return l;
-  }, [produk, q, kat, urut, stokF, favOnly, favs]);
+  }, [produk, q, kat, urut, stokF, pakai, favOnly, favs]);
 
   const jmlHal = Math.max(1, Math.ceil(tampil.length / PER));
   const halIni = Math.min(hal, jmlHal);
@@ -53,15 +55,16 @@ export default function Katalog({ produk }) {
 
   return (
     <section id="katalog" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-14">
-      <h2 className="font-display text-3xl font-bold">Daftar produk</h2>
-      <p className="mt-2 max-w-xl text-redam">Cari, saring, dan simpan favoritmu. Tambahkan beberapa produk ke keranjang lalu pesan sekaligus lewat WhatsApp.</p>
+      <h2 className="font-display text-3xl font-bold">{judul}</h2>
+      <p className="mt-2 max-w-xl text-redam">{intro || "Cari, saring, dan simpan favoritmu. Tambahkan beberapa produk ke keranjang lalu pesan sekaligus lewat WhatsApp."}</p>
 
       <div className="mt-6 flex flex-col gap-3 md:flex-row">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama atau deskripsi produk" aria-label="Cari produk" className="input md:flex-1" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama, bahan, atau warna" aria-label="Cari produk" className="input md:flex-1" />
         <select value={urut} onChange={(e) => setUrut(e.target.value)} aria-label="Urutkan" className="input md:w-48">
           <option value="baru">Terbaru</option><option value="murah">Termurah</option><option value="mahal">Termahal</option><option value="nama">Nama A–Z</option>
         </select>
         <select value={stokF} onChange={(e) => setStokF(e.target.value)} aria-label="Stok" className="input md:w-40"><option value="semua">Semua stok</option><option value="ada">Tersedia</option><option value="habis">Habis</option></select>
+        <select value={pakai} onChange={(e) => setPakai(e.target.value)} aria-label="Indoor atau outdoor" className="input md:w-40"><option value="semua">Indoor &amp; outdoor</option>{PENGGUNAAN.filter(([k]) => k !== "indoor-outdoor").map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>
         <button onClick={() => setFavOnly(!favOnly)} aria-pressed={favOnly} className={favOnly ? "btn-brand" : "btn-garis"}>♥ Favorit ({favs.length})</button>
       </div>
 
@@ -71,6 +74,7 @@ export default function Katalog({ produk }) {
             className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${kat === k ? "border-teak bg-teak text-white" : "border-garis bg-white hover:bg-stone-100"}`}>{k}</button>
         ))}
       </div>
+      {linkKategori && kat !== "Semua" && <p className="mt-3 text-sm"><a href={`/kategori/${slugKategori(kat)}`} className="font-medium text-brand underline">Buka halaman kategori {kat} →</a></p>}
 
       {tampil.length === 0 ? (
         <p className="panel mt-8 p-10 text-center text-redam">Produk tidak ditemukan. Ubah kata kunci atau pilih kategori lain.</p>

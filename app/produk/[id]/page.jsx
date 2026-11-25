@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import Foto from "../../../components/Foto";
-import TombolWhatsApp from "../../../components/TombolWhatsApp";
 import TombolBagikan from "../../../components/TombolBagikan";
+import PesanProduk from "../../../components/PesanProduk";
+import SpesifikasiProduk from "../../../components/SpesifikasiProduk";
 import CatatDilihat from "../../../components/CatatDilihat";
 import { dbServer } from "../../../lib/supabase/server";
 import { rupiah } from "../../../lib/format";
+import { slugKategori, hemat } from "../../../lib/produk";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +40,7 @@ export default async function Detail({ params }) {
   let terkait = [];
   if (p.kategori) {
     try {
-      const { data } = await dbServer().from("produk").select("id, nama, harga, foto_url").eq("kategori", p.kategori).neq("id", p.id).limit(3);
+      const { data } = await dbServer().from("produk").select("id, nama, harga, foto_url, harga_coret").eq("kategori", p.kategori).neq("id", p.id).limit(3);
       terkait = data || [];
     } catch {}
   }
@@ -51,9 +53,15 @@ export default async function Detail({ params }) {
           <CatatDilihat id={p.id} />
           <Foto src={p.foto_url} alt={p.nama} className="aspect-square w-full rounded-2xl border border-garis" />
           <div className="flex flex-col gap-4 self-center">
-            {p.kategori && <span className="w-fit rounded-md bg-stone-200 px-2.5 py-1 text-xs font-semibold">{p.kategori}</span>}
+            <div className="flex flex-wrap gap-2">
+              {p.kategori && <Link href={`/kategori/${slugKategori(p.kategori)}`} className="w-fit rounded-md bg-stone-200 px-2.5 py-1 text-xs font-semibold hover:bg-stone-100">{p.kategori}</Link>}
+              {p.badge && <span className="w-fit rounded-md bg-brand px-2.5 py-1 text-xs font-bold text-white">{p.badge}</span>}
+            </div>
             <h1 className="font-display text-3xl font-bold md:text-4xl">{p.nama}</h1>
-            <p className="font-display text-3xl font-bold text-brand">{rupiah(p.harga)}</p>
+            <div>
+              {hemat(p) > 0 && <p className="text-sm text-redam"><s>{rupiah(p.harga_coret)}</s> <b className="text-brand">Hemat {hemat(p)}%</b></p>}
+              <p className="font-display text-3xl font-bold text-brand">{rupiah(p.harga)}</p>
+            </div>
             {p.deskripsi && <p className="max-w-prose leading-relaxed text-redam">{p.deskripsi}</p>}
             {(p.stok ?? 1) > 0 ? (
               <p className="text-sm font-medium text-emerald-700">Stok tersedia: {p.stok ?? "–"}</p>
@@ -62,14 +70,14 @@ export default async function Detail({ params }) {
             )}
             <div className="pt-2">
               {(p.stok ?? 1) > 0 ? (
-                <TombolWhatsApp produk={p} />
+                <PesanProduk produk={p} />
               ) : (
-                <button type="button" disabled className="btn-brand w-full cursor-not-allowed py-3.5 text-base opacity-50 sm:w-auto">Stok habis</button>
+                <div className="flex flex-wrap items-center gap-2"><button type="button" disabled className="btn-brand w-full cursor-not-allowed py-3.5 text-base opacity-50 sm:w-auto">Stok habis</button><TombolBagikan judul={p.nama} /></div>
               )}
-              <TombolBagikan judul={p.nama} />
             </div>
           </div>
         </div>
+        <SpesifikasiProduk p={p} />
         {terkait.length > 0 && (
           <section className="mt-14">
             <h2 className="font-display text-2xl font-bold">Produk terkait</h2>

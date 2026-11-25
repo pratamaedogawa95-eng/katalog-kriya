@@ -30,9 +30,4 @@ select * from (values
 ) as v (nama, jenis, foto_url)
 where not exists (select 1 from public.ruangan);
 
-insert into public.tanda (ruangan_id, produk_id, x, y)
-select r.id, p.id, t.x, t.y
-from (values ('Ruang Tamu','Tas Anyaman Pandan',32,66), ('Ruang Tamu','Kain Batik Cap 2 m',68,48), ('Teras','Kopi Bubuk Robusta 250 g',50,64)) as t (ruang, produk, x, y)
-join public.ruangan r on r.nama = t.ruang
-join public.produk p on p.nama = t.produk
-where not exists (select 1 from public.tanda);
+-- Tanda (+) contoh diisi oleh docs/migrasi-furnitur.sql (setelah produk furnitur tersedia).

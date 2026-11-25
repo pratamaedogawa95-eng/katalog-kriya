@@ -1,5 +1,6 @@
 import "./globals.css";
 import { toko } from "../lib/toko";
+import { headers } from "next/headers";
 import RegistrasiSW from "../components/RegistrasiSW";
 
 export const metadata = {
@@ -10,10 +11,15 @@ export const metadata = {
 export const dynamic = "force-dynamic"; // CSP bernonce butuh render per permintaan
 export const viewport = { themeColor: "#92400e" };
 
-export default function RootLayout({ children }) {
+// Skrip kecil sebelum render: pasang mode gelap lebih awal agar tidak berkedip. Memakai nonce dari proxy.js (CSP).
+const SKRIP_TEMA = 'try{var t=localStorage.getItem("tema");if(t==="gelap"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}';
+
+export default async function RootLayout({ children }) {
+  const nonce = (await headers()).get("x-nonce") || undefined;
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <head>
+        <script nonce={nonce} suppressHydrationWarning>{SKRIP_TEMA}</script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />

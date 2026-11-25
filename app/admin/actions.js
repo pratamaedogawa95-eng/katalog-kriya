@@ -43,24 +43,52 @@ export async function gantiPassword(_, fd) {
   return { ok: "Password berhasil diganti." };
 }
 
+// Validasi di server (US-34): panjang teks, rentang angka, dan bentuk link foto.
+const PENGGUNAAN_SAH = ["indoor", "outdoor", "indoor-outdoor"];
+
+function bacaProduk(fd) {
+  const teks = (k, maks) => String(fd.get(k) || "").trim().slice(0, maks) || null;
+  const angka = (k) => { const v = String(fd.get(k) ?? "").trim(); return v === "" ? null : Number(v.replace(",", ".")); };
+  const d = {
+    nama: teks("nama", 120), kategori: teks("kategori", 60), deskripsi: teks("deskripsi", 2000), foto_url: teks("foto_url", 500),
+    bahan: teks("bahan", 200), finishing: teks("finishing", 200), warna: teks("warna", 80),
+    garansi: teks("garansi", 200), perawatan: teks("perawatan", 500), waktu_pembuatan: teks("waktu_pembuatan", 80), badge: teks("badge", 20),
+    penggunaan: teks("penggunaan", 20),
+    harga: angka("harga"), stok: angka("stok"), harga_coret: angka("harga_coret"),
+    panjang_cm: angka("panjang_cm"), lebar_cm: angka("lebar_cm"), tinggi_cm: angka("tinggi_cm"), berat_kg: angka("berat_kg"),
+  };
+  if (!d.nama) return { error: "Nama produk wajib diisi." };
+  if (!Number.isInteger(d.harga) || d.harga < 0 || d.harga > 1_000_000_000) return { error: "Harga harus bilangan bulat antara 0 dan 1.000.000.000." };
+  if (!Number.isInteger(d.stok) || d.stok < 0 || d.stok > 100000) return { error: "Stok harus bilangan bulat antara 0 dan 100.000." };
+  if (d.harga_coret !== null && (!Number.isInteger(d.harga_coret) || d.harga_coret <= d.harga)) return { error: "Harga coret harus bilangan bulat dan lebih besar dari harga jual, atau kosongkan." };
+  for (const [k, n] of [["panjang_cm", "Panjang"], ["lebar_cm", "Lebar"], ["tinggi_cm", "Tinggi"]]) {
+    if (d[k] !== null && (!Number.isInteger(d[k]) || d[k] <= 0 || d[k] > 2000)) return { error: `${n} harus bilangan bulat dalam cm (1–2000), atau kosongkan.` };
+  }
+  if (d.berat_kg !== null && (!(d.berat_kg > 0) || d.berat_kg > 5000)) return { error: "Berat harus lebih dari 0 dan maksimal 5000 kg, atau kosongkan." };
+  if (d.penggunaan !== null && !PENGGUNAAN_SAH.includes(d.penggunaan)) return { error: "Pilihan indoor/outdoor tidak valid." };
+  if (d.foto_url && !/^(https:\/\/|\/(?!\/))/.test(d.foto_url)) return { error: "Link foto harus diawali https:// atau / (contoh: /produk/kursi.svg)." };
+  if (d.berat_kg !== null) d.berat_kg = Math.round(d.berat_kg * 10) / 10;
+  return { d };
+}
+
 export async function simpanProduk(_, fd) {
   const sb = await wajibAdmin();
-  const teks = (k) => String(fd.get(k) || "").trim() || null;
-  const data = { nama: teks("nama"), harga: Number(fd.get("harga")), kategori: teks("kategori"), foto_url: teks("foto_url"), deskripsi: teks("deskripsi"), stok: Number(fd.get("stok")) };
-  if (!data.nama) return { error: "Nama produk wajib diisi." };
-  if (!Number.isInteger(data.harga) || data.harga < 0) return { error: "Harga harus bilangan bulat, minimal 0." };
-  if (!Number.isInteger(data.stok) || data.stok < 0) return { error: "Stok harus bilangan bulat, minimal 0." };
+  const { d, error: salah } = bacaProduk(fd);
+  if (salah) return { error: salah };
   const id = fd.get("id");
-  const { error } = id ? await sb.from("produk").update(data).eq("id", id) : await sb.from("produk").insert(data);
+  if (id && !/^\d+$/.test(String(id))) return { error: "Produk tidak valid." };
+  const { error } = id ? await sb.from("produk").update(d).eq("id", id) : await sb.from("produk").insert(d);
   if (error) return { error: "Gagal menyimpan produk." };
-  revalidatePath("/");
+  revalidatePath("/"); revalidatePath("/kategori", "layout");
   redirect("/admin");
 }
 
 export async function hapusProduk(fd) {
   const sb = await wajibAdmin();
-  await sb.from("produk").delete().eq("id", fd.get("id"));
-  revalidatePath("/");
+  const id = String(fd.get("id") || "");
+  if (!/^\d+$/.test(id)) return;
+  await sb.from("produk").delete().eq("id", id);
+  revalidatePath("/"); revalidatePath("/kategori", "layout");
   revalidatePath("/admin");
 }
 

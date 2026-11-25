@@ -2,7 +2,7 @@ import { dbSesi } from "../../../lib/supabase/sesi";
 
 export const dynamic = "force-dynamic";
 
-const kolom = ["id", "nama", "kategori", "harga", "stok", "deskripsi", "foto_url", "created_at"];
+const kolom = ["id", "nama", "kategori", "penggunaan", "harga", "harga_coret", "badge", "stok", "bahan", "finishing", "warna", "panjang_cm", "lebar_cm", "tinggi_cm", "berat_kg", "waktu_pembuatan", "garansi", "perawatan", "deskripsi", "foto_url", "created_at"];
 
 // Kutip nilai CSV; awalan = + - @ diberi tanda kutip agar tidak dibaca sebagai rumus di Excel.
 function sel(v) {
@@ -23,7 +23,7 @@ export async function GET() {
   return new Response("\uFEFF" + baris.join("\r\n"), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="produk-kala-karsa.csv"',
+      "Content-Disposition": 'attachment; filename="produk-furnitur.csv"',
       "Cache-Control": "no-store",
     },
   });

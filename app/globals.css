@@ -27,3 +27,16 @@ body { background: var(--color-kertas); color: var(--color-tinta); font-family: 
   .label { @apply mb-1.5 block text-sm font-medium; }
   .panel { @apply rounded-xl border border-garis bg-white; }
 }
+
+/* Mode gelap (US-25): kelas "dark" dipasang di <html> oleh TombolTema / skrip awal di layout. */
+.dark { color-scheme: dark; --color-kertas: #141110; --color-tinta: #f1ece4; --color-garis: #3a322c; --color-redam: #b0a69b; --color-brand: #c2621f; --color-brand-tua: #a9531a; }
+.dark .bg-white, .dark .panel, .dark .input, .dark .btn-garis, .dark .btn-bahaya { background-color: #1d1a17; }
+.dark .bg-white\/90 { background-color: rgb(29 26 23 / 0.9); }
+.dark .bg-stone-100, .dark .bg-stone-200, .dark .btn-garis:hover, .dark .hover\:bg-stone-100:hover { background-color: #2a2420; }
+.dark .bg-red-50, .dark .btn-bahaya:hover { background-color: #3a1d1a; }
+.dark .text-red-800, .dark .text-red-700, .dark .text-red-600 { color: #fca5a5; }
+.dark .border-red-200 { border-color: #7f1d1d; }
+.dark .bg-green-50 { background-color: #14301f; }
+.dark .text-green-800 { color: #86efac; }
+.dark .text-emerald-700 { color: #6ee7b7; }
+.dark .text-stone-400 { color: #a8a29e; }

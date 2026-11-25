@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { toko } from "../lib/toko";
+import TombolTema from "./TombolTema";
 
 export default function Header() {
   return (
@@ -15,6 +16,7 @@ export default function Header() {
           <a href="/#katalog" className="hover:text-tinta">Katalog</a>
           <a href="/#tentang" className="hidden hover:text-tinta sm:block">Tentang</a>
           <a href="/#kontak" className="hover:text-tinta">Kontak</a>
+          <TombolTema />
         </nav>
       </div>
     </header>
