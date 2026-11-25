@@ -36,7 +36,10 @@ export default async function Admin() {
         </div>
         <div className="mt-10 flex items-center justify-between">
           <h2 className="font-display text-2xl font-bold">Produk</h2>
-          <Link href="/admin/produk/baru" className="btn-brand">Tambah produk</Link>
+          <div className="flex gap-2">
+            <a href="/admin/ekspor" className="btn-garis">Ekspor CSV</a>
+            <Link href="/admin/produk/baru" className="btn-brand">Tambah produk</Link>
+          </div>
         </div>
         {error && <p className="mt-4 rounded-lg bg-red-50 p-4 text-red-800">Produk gagal dimuat. Muat ulang halaman.</p>}
         <ul className="panel mt-4 divide-y divide-garis">

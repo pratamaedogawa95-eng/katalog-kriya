@@ -13,6 +13,9 @@ export default function Katalog({ produk }) {
   const [favs, setFavs] = useState([]);
   const [cart, setCart] = useState({});
   const [buka, setBuka] = useState(false);
+  const [hal, setHal] = useState(1);
+  const PER = 12; // produk per halaman
+  useEffect(() => { setHal(1); }, [q, kat, urut, stokF, favOnly]);
 
   useEffect(() => { try { setFavs(JSON.parse(localStorage.getItem("favorit") || "[]")); } catch {} }, []);
   const ubahFav = (id) => setFavs((f) => {
@@ -36,6 +39,11 @@ export default function Katalog({ produk }) {
     if (urut === "nama") l = [...l].sort((a, b) => a.nama.localeCompare(b.nama));
     return l;
   }, [produk, q, kat, urut, stokF, favOnly, favs]);
+
+  const jmlHal = Math.max(1, Math.ceil(tampil.length / PER));
+  const halIni = Math.min(hal, jmlHal);
+  const tampilHal = tampil.slice((halIni - 1) * PER, halIni * PER);
+  const keHal = (n) => { setHal(n); document.getElementById("katalog")?.scrollIntoView({ behavior: "smooth" }); };
 
   const item = produk.filter((p) => cart[p.id]).map((p) => ({ ...p, qty: cart[p.id] }));
   const jumlah = item.reduce((s, p) => s + p.qty, 0);
@@ -67,9 +75,21 @@ export default function Katalog({ produk }) {
         <p className="panel mt-8 p-10 text-center text-redam">Produk tidak ditemukan. Ubah kata kunci atau pilih kategori lain.</p>
       ) : (
         <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {tampil.map((p) => <KartuProduk key={p.id} p={p} favorit={favs.includes(p.id)} onFavorit={ubahFav} onTambah={(id) => { ubahJumlah(id); }} />)}
+          {tampilHal.map((p) => <KartuProduk key={p.id} p={p} favorit={favs.includes(p.id)} onFavorit={ubahFav} onTambah={(id) => { ubahJumlah(id); }} />)}
         </div>
       )}
+
+      {jmlHal > 1 && (
+        <nav aria-label="Halaman produk" className="mt-8 flex flex-wrap items-center justify-center gap-2">
+          <button onClick={() => keHal(halIni - 1)} disabled={halIni === 1} className="btn-garis px-3 py-1.5 disabled:opacity-50">← Sebelumnya</button>
+          {Array.from({ length: jmlHal }, (_, i) => i + 1).map((n) => (
+            <button key={n} onClick={() => keHal(n)} aria-current={n === halIni ? "page" : undefined}
+              className={n === halIni ? "btn-brand size-9 !p-0" : "btn-garis size-9 !p-0"}>{n}</button>
+          ))}
+          <button onClick={() => keHal(halIni + 1)} disabled={halIni === jmlHal} className="btn-garis px-3 py-1.5 disabled:opacity-50">Berikutnya →</button>
+        </nav>
+      )}
+      <p className="mt-3 text-center text-sm text-redam">Menampilkan {tampilHal.length} dari {tampil.length} produk</p>
 
       {jumlah > 0 && !buka && (
         <button onClick={() => setBuka(true)} className="btn-brand fixed bottom-5 right-5 z-40 rounded-full px-5 py-3.5 shadow-xl">Keranjang ({jumlah}) · {rupiah(total)}</button>
