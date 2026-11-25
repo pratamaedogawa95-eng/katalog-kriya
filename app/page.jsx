@@ -1,5 +1,6 @@
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import BannerPromo from "../components/BannerPromo";
 import Katalog from "../components/Katalog";
 import { dbServer } from "../lib/supabase/server";
 import Etalase from "../components/Etalase";
@@ -22,6 +23,7 @@ export default async function Beranda() {
   } catch { error = true; } // koneksi database belum terpasang atau gagal
   return (
     <>
+      <BannerPromo />
       <Header />
       <main>
         <section className="bg-teak text-white">
