@@ -63,6 +63,10 @@ export function FormProduk({ awal }) {
           <Isian label="Harga coret (Rp, opsional)" nama="harga_coret" type="number" min="0" step="1" defaultValue={v("harga_coret")} />
           <Isian label="Stok" nama="stok" type="number" min="0" step="1" required defaultValue={awal?.stok ?? 10} />
         </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Isian label="Urutan tampil (0 = biasa, angka kecil lebih dulu)" nama="urutan" type="number" min="0" max="9999" step="1" defaultValue={awal?.urutan ?? 0} />
+          <label className="mt-7 flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="aktif" defaultChecked={awal?.aktif ?? true} className="size-4" /> Tampilkan di toko (aktif)</label>
+        </div>
         <Isian label="Badge (opsional, mis. Baru, Terlaris, Hemat)" nama="badge" maxLength={20} defaultValue={v("badge")} />
       </fieldset>
 

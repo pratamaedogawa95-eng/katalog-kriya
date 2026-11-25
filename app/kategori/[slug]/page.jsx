@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // Halaman per kategori (US-49): /kategori/kursi, /kategori/lemari-dan-rak, dst.
 async function ambil(slug) {
   try {
-    const { data } = await dbServer().from("produk").select("*").not("kategori", "is", null).order("created_at", { ascending: false });
+    const { data } = await dbServer().from("produk").select("*").not("kategori", "is", null).eq("aktif", true).order("urutan").order("created_at", { ascending: false });
     const semua = data || [];
     const daftar = semua.filter((p) => slugKategori(p.kategori) === slug);
     return daftar.length ? { nama: daftar[0].kategori, daftar, lain: [...new Set(semua.map((p) => p.kategori))].filter((k) => slugKategori(k) !== slug) } : null;

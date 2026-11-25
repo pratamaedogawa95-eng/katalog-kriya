@@ -18,7 +18,7 @@ export default async function Beranda() {
   let data = null, error = null, ruangan = [];
   try {
     const db = dbServer();
-    ({ data, error } = await db.from("produk").select("*").order("created_at", { ascending: false }));
+    ({ data, error } = await db.from("produk").select("*").eq("aktif", true).order("urutan").order("created_at", { ascending: false }));
     ({ data: ruangan } = await db.from("ruangan").select("*, tanda(id, produk_id, x, y)").order("id"));
   } catch { error = true; } // koneksi database belum terpasang atau gagal
   return (

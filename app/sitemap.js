@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function sitemap() {
   let produk = [];
   try {
-    const { data } = await dbServer().from("produk").select("id, created_at, kategori");
+    const { data } = await dbServer().from("produk").select("id, created_at, kategori").eq("aktif", true);
     produk = data || [];
   } catch {}
   const kategori = [...new Set(produk.map((p) => p.kategori).filter(Boolean).map(slugKategori))];

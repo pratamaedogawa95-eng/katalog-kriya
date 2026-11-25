@@ -61,7 +61,7 @@ export default function Katalog({ produk, judul = "Daftar produk", intro, linkKa
       <div className="mt-6 flex flex-col gap-3 md:flex-row">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama, bahan, atau warna" aria-label="Cari produk" className="input md:flex-1" />
         <select value={urut} onChange={(e) => setUrut(e.target.value)} aria-label="Urutkan" className="input md:w-48">
-          <option value="baru">Terbaru</option><option value="murah">Termurah</option><option value="mahal">Termahal</option><option value="nama">Nama A–Z</option>
+          <option value="baru">Pilihan toko</option><option value="murah">Termurah</option><option value="mahal">Termahal</option><option value="nama">Nama A–Z</option>
         </select>
         <select value={stokF} onChange={(e) => setStokF(e.target.value)} aria-label="Stok" className="input md:w-40"><option value="semua">Semua stok</option><option value="ada">Tersedia</option><option value="habis">Habis</option></select>
         <select value={pakai} onChange={(e) => setPakai(e.target.value)} aria-label="Indoor atau outdoor" className="input md:w-40"><option value="semua">Indoor &amp; outdoor</option>{PENGGUNAAN.filter(([k]) => k !== "indoor-outdoor").map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>

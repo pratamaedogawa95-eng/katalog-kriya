@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 async function ambil(id) {
   if (!/^\d+$/.test(id)) return null;
   try {
-    const { data } = await dbServer().from("produk").select("*").eq("id", id).maybeSingle();
+    const { data } = await dbServer().from("produk").select("*").eq("id", id).eq("aktif", true).maybeSingle();
     return data;
   } catch { return null; }
 }
@@ -40,7 +40,7 @@ export default async function Detail({ params }) {
   let terkait = [];
   if (p.kategori) {
     try {
-      const { data } = await dbServer().from("produk").select("id, nama, harga, foto_url, harga_coret").eq("kategori", p.kategori).neq("id", p.id).limit(3);
+      const { data } = await dbServer().from("produk").select("id, nama, harga, foto_url, harga_coret").eq("kategori", p.kategori).eq("aktif", true).neq("id", p.id).limit(3);
       terkait = data || [];
     } catch {}
   }

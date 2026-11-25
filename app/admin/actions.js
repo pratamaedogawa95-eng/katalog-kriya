@@ -54,6 +54,7 @@ function bacaProduk(fd) {
     bahan: teks("bahan", 200), finishing: teks("finishing", 200), warna: teks("warna", 80),
     garansi: teks("garansi", 200), perawatan: teks("perawatan", 500), waktu_pembuatan: teks("waktu_pembuatan", 80), badge: teks("badge", 20),
     penggunaan: teks("penggunaan", 20),
+    aktif: fd.get("aktif") === "on", urutan: angka("urutan") ?? 0,
     harga: angka("harga"), stok: angka("stok"), harga_coret: angka("harga_coret"),
     panjang_cm: angka("panjang_cm"), lebar_cm: angka("lebar_cm"), tinggi_cm: angka("tinggi_cm"), berat_kg: angka("berat_kg"),
   };
@@ -65,6 +66,7 @@ function bacaProduk(fd) {
     if (d[k] !== null && (!Number.isInteger(d[k]) || d[k] <= 0 || d[k] > 2000)) return { error: `${n} harus bilangan bulat dalam cm (1–2000), atau kosongkan.` };
   }
   if (d.berat_kg !== null && (!(d.berat_kg > 0) || d.berat_kg > 5000)) return { error: "Berat harus lebih dari 0 dan maksimal 5000 kg, atau kosongkan." };
+  if (!Number.isInteger(d.urutan) || d.urutan < 0 || d.urutan > 9999) return { error: "Urutan tampil harus bilangan bulat 0–9999 (angka kecil tampil lebih dulu)." };
   if (d.penggunaan !== null && !PENGGUNAAN_SAH.includes(d.penggunaan)) return { error: "Pilihan indoor/outdoor tidak valid." };
   if (d.foto_url && !/^(https:\/\/|\/(?!\/))/.test(d.foto_url)) return { error: "Link foto harus diawali https:// atau / (contoh: /produk/kursi.svg)." };
   if (d.berat_kg !== null) d.berat_kg = Math.round(d.berat_kg * 10) / 10;
@@ -81,6 +83,15 @@ export async function simpanProduk(_, fd) {
   if (error) return { error: "Gagal menyimpan produk." };
   revalidatePath("/"); revalidatePath("/kategori", "layout");
   redirect("/admin");
+}
+
+// US-32: aktifkan atau nonaktifkan produk (produk nonaktif disembunyikan dari pengunjung).
+export async function ubahAktif(fd) {
+  const sb = await wajibAdmin();
+  const id = String(fd.get("id") || "");
+  if (!/^\d+$/.test(id)) return;
+  await sb.from("produk").update({ aktif: fd.get("aktif") === "true" }).eq("id", id);
+  revalidatePath("/"); revalidatePath("/admin"); revalidatePath("/kategori", "layout");
 }
 
 export async function hapusProduk(fd) {
