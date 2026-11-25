@@ -11,8 +11,10 @@ export const dynamic = "force-dynamic";
 
 async function ambil(id) {
   if (!/^\d+$/.test(id)) return null;
-  const { data } = await dbServer().from("produk").select("*").eq("id", id).maybeSingle();
-  return data;
+  try {
+    const { data } = await dbServer().from("produk").select("*").eq("id", id).maybeSingle();
+    return data;
+  } catch { return null; }
 }
 
 export async function generateMetadata({ params }) {
