@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import KartuProduk from "./KartuProduk";
+import TerakhirDilihat from "./TerakhirDilihat";
 import { rupiah } from "../lib/format";
 import { toko, linkWA } from "../lib/toko";
 
@@ -90,6 +91,8 @@ export default function Katalog({ produk }) {
         </nav>
       )}
       <p className="mt-3 text-center text-sm text-redam">Menampilkan {tampilHal.length} dari {tampil.length} produk</p>
+
+      <TerakhirDilihat produk={produk} />
 
       {jumlah > 0 && !buka && (
         <button onClick={() => setBuka(true)} className="btn-brand fixed bottom-5 right-5 z-40 rounded-full px-5 py-3.5 shadow-xl">Keranjang ({jumlah}) · {rupiah(total)}</button>

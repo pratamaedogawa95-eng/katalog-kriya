@@ -4,6 +4,8 @@ import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import Foto from "../../../components/Foto";
 import TombolWhatsApp from "../../../components/TombolWhatsApp";
+import TombolBagikan from "../../../components/TombolBagikan";
+import CatatDilihat from "../../../components/CatatDilihat";
 import { dbServer } from "../../../lib/supabase/server";
 import { rupiah } from "../../../lib/format";
 
@@ -33,12 +35,20 @@ export async function generateMetadata({ params }) {
 export default async function Detail({ params }) {
   const p = await ambil((await params).id);
   if (!p) notFound();
+  let terkait = [];
+  if (p.kategori) {
+    try {
+      const { data } = await dbServer().from("produk").select("id, nama, harga, foto_url").eq("kategori", p.kategori).neq("id", p.id).limit(3);
+      terkait = data || [];
+    } catch {}
+  }
   return (
     <>
       <Header />
       <main className="mx-auto max-w-5xl px-5 py-10">
         <Link href="/#katalog" className="text-sm font-medium text-brand hover:underline">← Kembali ke katalog</Link>
         <div className="mt-6 grid gap-10 md:grid-cols-2">
+          <CatatDilihat id={p.id} />
           <Foto src={p.foto_url} alt={p.nama} className="aspect-square w-full rounded-2xl border border-garis" />
           <div className="flex flex-col gap-4 self-center">
             {p.kategori && <span className="w-fit rounded-md bg-stone-200 px-2.5 py-1 text-xs font-semibold">{p.kategori}</span>}
@@ -56,9 +66,23 @@ export default async function Detail({ params }) {
               ) : (
                 <button type="button" disabled className="btn-brand w-full cursor-not-allowed py-3.5 text-base opacity-50 sm:w-auto">Stok habis</button>
               )}
+              <TombolBagikan judul={p.nama} />
             </div>
           </div>
         </div>
+        {terkait.length > 0 && (
+          <section className="mt-14">
+            <h2 className="font-display text-2xl font-bold">Produk terkait</h2>
+            <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3">
+              {terkait.map((r) => (
+                <Link key={r.id} href={`/produk/${r.id}`} className="panel overflow-hidden hover:shadow-lg">
+                  <Foto src={r.foto_url} alt={r.nama} className="aspect-square w-full" />
+                  <div className="p-3"><p className="truncate font-semibold">{r.nama}</p><p className="font-bold text-brand">{rupiah(r.harga)}</p></div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
       <Footer />
     </>
