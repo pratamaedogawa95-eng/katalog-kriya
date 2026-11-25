@@ -1,5 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin
-Disallow: /index.html#admin
-Sitemap: https://GANTI-DENGAN-DOMAINMU.vercel.app/sitemap.xml
