@@ -1,5 +1,6 @@
 import "./globals.css";
 import { toko } from "../lib/toko";
+import RegistrasiSW from "../components/RegistrasiSW";
 
 export const metadata = {
   title: `${toko.nama} — ${toko.tagline}`,
@@ -17,7 +18,7 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body>{children}</body>
+      <body>{children}<RegistrasiSW /></body>
     </html>
   );
 }
