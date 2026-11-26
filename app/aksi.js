@@ -1,6 +1,9 @@
 "use server";
 import { dbServer } from "../lib/supabase/server";
 import { batasi, ipKlien } from "../lib/batas";
+import { jawab, dalamTopik, pesanLuarTopik } from "../lib/asisten";
+import { jawabAI } from "../lib/asisten-ai";
+import { ambilToko } from "../lib/toko-server";
 
 // US-40: catat klik tombol WhatsApp. Publik, jadi dibatasi per IP dan hanya menerima id angka.
 export async function catatKlik(id) {
@@ -31,4 +34,25 @@ export async function kirimUlasan(_, fd) {
     if (error) return { error: "Ulasan belum bisa dikirim. Coba lagi nanti." };
   } catch { return { error: "Ulasan belum bisa dikirim. Coba lagi nanti." }; }
   return { ok: "Terima kasih! Ulasanmu akan tampil setelah disetujui admin." };
+}
+
+// US-50: asisten tanya jawab produk. Publik, jadi: batas 15 pertanyaan/menit per IP, id dan panjang teks divalidasi,
+// data produk diambil dari database di server (bukan dari browser). Memakai Gemini bila GEMINI_API_KEY ada, bila tidak atau gagal, memakai asisten berbasis aturan.
+export async function tanyaAsistenProduk(produkId, pertanyaan) {
+  const id = Number(produkId);
+  const q = String(pertanyaan || "").trim().slice(0, 200);
+  if (!Number.isInteger(id) || id <= 0 || !q) return { error: "Pertanyaan tidak valid." };
+  if (!(await batasi(`asisten:${await ipKlien()}`, 15, 60_000))) return { error: "Terlalu banyak pertanyaan. Coba lagi sebentar lagi." };
+  try {
+    const { data: p } = await dbServer().from("produk").select("*").eq("id", id).eq("aktif", true).maybeSingle();
+    if (!p) return { error: "Produk tidak ditemukan." };
+    const t = await ambilToko();
+    const toko = { nama: t.nama, alamat: t.alamat, jamBuka: t.jamBuka, nomorWhatsApp: t.nomorWhatsApp };
+    if (!dalamTopik(q, p, toko)) return { jawaban: pesanLuarTopik(p.nama) };
+    const ai = await jawabAI(q, p, toko);
+    if (ai && ai.includes("LUAR_TOPIK")) return { jawaban: pesanLuarTopik(p.nama) };
+    if (ai) return { jawaban: ai };
+    const j = jawab(q, p, toko);
+    return { jawaban: j.teks, wa: Boolean(j.wa) };
+  } catch { return { error: "Asisten belum bisa menjawab. Coba lagi nanti." }; }
 }

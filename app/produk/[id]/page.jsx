@@ -8,7 +8,9 @@ import TombolBagikan from "../../../components/TombolBagikan";
 import PesanProduk from "../../../components/PesanProduk";
 import UlasanProduk from "../../../components/UlasanProduk";
 import SpesifikasiProduk from "../../../components/SpesifikasiProduk";
+import AsistenProduk from "../../../components/AsistenProduk";
 import CatatDilihat from "../../../components/CatatDilihat";
+import { ambilToko } from "../../../lib/toko-server";
 import { dbServer } from "../../../lib/supabase/server";
 import { rupiah } from "../../../lib/format";
 import { slugKategori, hemat } from "../../../lib/produk";
@@ -39,6 +41,7 @@ export async function generateMetadata({ params }) {
 export default async function Detail({ params }) {
   const p = await ambil((await params).id);
   if (!p) notFound();
+  const toko = await ambilToko();
   let terkait = [];
   if (p.kategori) {
     try {
@@ -80,6 +83,7 @@ export default async function Detail({ params }) {
           </div>
         </div>
         <SpesifikasiProduk p={p} />
+        <AsistenProduk p={{ id: p.id, nama: p.nama }} toko={{ nama: toko.nama, nomorWhatsApp: toko.nomorWhatsApp }} />
         <UlasanProduk produkId={p.id} />
         {terkait.length > 0 && (
           <section className="mt-14">

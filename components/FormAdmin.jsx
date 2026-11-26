@@ -1,4 +1,5 @@
 "use client";
+import TombolDeskripsi from "./TombolDeskripsi";
 import { useActionState } from "react";
 import UnggahFoto from "./UnggahFoto";
 import { masuk, gantiPassword, simpanProduk, simpanPengaturan, imporProduk, tambahAdmin } from "../app/admin/actions";
@@ -55,7 +56,7 @@ export function FormProduk({ awal, kategoriAda = [] }) {
               <option value="">Belum diisi</option><option value="indoor">Indoor</option><option value="outdoor">Outdoor</option><option value="indoor-outdoor">Indoor &amp; outdoor</option>
             </select></div>
         </div>
-        <div><label htmlFor="deskripsi" className="label">Deskripsi</label><textarea id="deskripsi" name="deskripsi" rows={4} maxLength={2000} className="input" defaultValue={v("deskripsi")} /></div>
+        <div><div className="mb-1.5 flex items-center justify-between gap-2"><label htmlFor="deskripsi" className="text-sm font-medium">Deskripsi</label><TombolDeskripsi /></div><textarea id="deskripsi" name="deskripsi" rows={4} maxLength={2000} className="input" defaultValue={v("deskripsi")} /></div>
         <div><label htmlFor="foto_tambahan" className="label">Foto tambahan (satu link per baris, maksimal 5)</label><textarea id="foto_tambahan" name="foto_tambahan" rows={3} className="input" defaultValue={(awal?.foto_tambahan || []).join("\n")} placeholder="https://…" /><div className="mt-2"><UnggahFoto target="foto_tambahan" tambah /></div></div>
         <div><Isian label="Link foto utama" nama="foto_url" defaultValue={v("foto_url")} placeholder="https://… atau /produk/kursi.svg" /><div className="mt-2"><UnggahFoto target="foto_url" /></div></div>
       </fieldset>

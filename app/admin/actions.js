@@ -6,6 +6,8 @@ import { batasi, batasiLokal, lepas, ipKlien } from "../../lib/batas";
 import { catat } from "../../lib/log";
 import { bacaCsv } from "../../lib/csv";
 import { dbServer } from "../../lib/supabase/server";
+import { buatDeskripsi } from "../../lib/asisten";
+import { deskripsiAI } from "../../lib/asisten-ai";
 
 async function wajibAdmin() {
   const sb = await dbSesi();
@@ -287,4 +289,20 @@ export async function hapusAdmin(fd) {
   const { error } = await db.auth.admin.deleteUser(id);
   if (!error) await catat(sb, "Hapus admin", id);
   revalidatePath("/admin/akun");
+}
+
+// US-14: buat deskripsi produk. Hanya admin login, dibatasi 10 permintaan/menit. Memakai Gemini bila GEMINI_API_KEY ada, bila tidak atau gagal, memakai templat. Hasil hanya mengisi kolom; admin tetap menyimpan sendiri.
+export async function generateDeskripsiAI(f) {
+  await wajibAdmin();
+  const b = (v, n) => String(v ?? "").trim().slice(0, n) || null;
+  const data = {
+    nama: b(f?.nama, 120), kategori: b(f?.kategori, 60), penggunaan: b(f?.penggunaan, 20),
+    bahan: b(f?.bahan, 200), finishing: b(f?.finishing, 200), warna: b(f?.warna, 80),
+    panjang_cm: b(f?.panjang_cm, 8), lebar_cm: b(f?.lebar_cm, 8), tinggi_cm: b(f?.tinggi_cm, 8),
+    waktu_pembuatan: b(f?.waktu_pembuatan, 80), garansi: b(f?.garansi, 200),
+  };
+  if (!data.nama) return { error: "Isi nama produk terlebih dahulu." };
+  if (!(await batasi(`deskripsi:${await ipKlien()}`, 10, 60_000))) return { error: "Terlalu banyak permintaan. Coba lagi sebentar lagi." };
+  const ai = await deskripsiAI(data);
+  return { success: true, deskripsi: ai || buatDeskripsi(data), sumber: ai ? "ai" : "templat" };
 }
