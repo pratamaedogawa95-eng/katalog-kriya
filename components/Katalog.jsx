@@ -1,12 +1,16 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import KartuProduk from "./KartuProduk";
+import Perbandingan from "./Perbandingan";
 import TerakhirDilihat from "./TerakhirDilihat";
 import { rupiah } from "../lib/format";
-import { toko, linkWA } from "../lib/toko";
+import { useTokoData } from "./TokoKonteks";
 import { PENGGUNAAN, slugKategori } from "../lib/produk";
 
 export default function Katalog({ produk, judul = "Daftar produk", intro, linkKategori = true }) {
+  const { toko, linkWA } = useTokoData();
+  const [banding, setBanding] = useState([]);
+  const ubahBanding = (id) => setBanding((b) => (b.includes(id) ? b.filter((x) => x !== id) : b.length >= 2 ? [b[1], id] : [...b, id]));
   const [q, setQ] = useState("");
   const [kat, setKat] = useState("Semua");
   const [urut, setUrut] = useState("baru");
@@ -80,7 +84,7 @@ export default function Katalog({ produk, judul = "Daftar produk", intro, linkKa
         <p className="panel mt-8 p-10 text-center text-redam">Produk tidak ditemukan. Ubah kata kunci atau pilih kategori lain.</p>
       ) : (
         <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {tampilHal.map((p) => <KartuProduk key={p.id} p={p} favorit={favs.includes(p.id)} onFavorit={ubahFav} onTambah={(id) => { ubahJumlah(id); }} />)}
+          {tampilHal.map((p) => <KartuProduk key={p.id} p={p} favorit={favs.includes(p.id)} onFavorit={ubahFav} banding={banding.includes(p.id)} onBanding={ubahBanding} onTambah={(id) => { ubahJumlah(id); }} />)}
         </div>
       )}
 
@@ -97,6 +101,7 @@ export default function Katalog({ produk, judul = "Daftar produk", intro, linkKa
       <p className="mt-3 text-center text-sm text-redam">Menampilkan {tampilHal.length} dari {tampil.length} produk</p>
 
       <TerakhirDilihat produk={produk} />
+      <Perbandingan daftar={banding.map((id) => produk.find((p) => p.id === id)).filter(Boolean)} onHapus={(id) => setBanding((b) => b.filter((x) => x !== id))} onKosongkan={() => setBanding([])} />
 
       {jumlah > 0 && !buka && (
         <button onClick={() => setBuka(true)} className="btn-brand fixed bottom-5 right-5 z-40 rounded-full px-5 py-3.5 shadow-xl">Keranjang ({jumlah}) · {rupiah(total)}</button>

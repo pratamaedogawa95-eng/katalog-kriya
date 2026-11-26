@@ -65,6 +65,7 @@ export default async function Admin({ searchParams }) {
           <h2 className="font-display text-2xl font-bold">Produk</h2>
           <div className="flex gap-2">
             <a href="/admin/ekspor" className="btn-garis">Ekspor CSV</a>
+            <Link href="/admin/impor" className="btn-garis">Impor CSV</Link>
             <Link href="/admin/produk/baru" className="btn-brand">Tambah produk</Link>
           </div>
         </div>

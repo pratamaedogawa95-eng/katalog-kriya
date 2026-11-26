@@ -15,3 +15,7 @@ Urutan SQL di Supabase: `docs/schema.sql` → `docs/schema-tambahan.sql` → `do
 
 ## Fitur tambahan
 Halaman per kategori `/kategori/[slug]`, mode gelap, pilih jumlah di halaman detail, harga coret + badge, pencarian dan paginasi di daftar admin, validasi server (panjang teks, rentang angka, link foto).
+
+## Fitur tahap 3
+Foto tambahan (galeri), bandingkan 2 produk, kelola kategori, impor CSV, pengaturan toko dari admin (nama, WhatsApp, promo), log aktivitas admin, dan rate limit login di database.
+Jalankan `docs/migrasi-bonus.sql` lalu `docs/migrasi-bonus2.sql` di Supabase SQL Editor **sebelum** deploy kode ini.

@@ -4,7 +4,7 @@ import BannerPromo from "../components/BannerPromo";
 import Katalog from "../components/Katalog";
 import { dbServer } from "../lib/supabase/server";
 import Etalase from "../components/Etalase";
-import { toko } from "../lib/toko";
+import { ambilToko } from "../lib/toko-server";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,7 @@ const langkah = [
 ];
 
 export default async function Beranda() {
+  const toko = await ambilToko();
   let data = null, error = null, ruangan = [];
   try {
     const db = dbServer();

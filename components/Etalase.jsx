@@ -3,9 +3,10 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import Foto from "./Foto";
 import { rupiah } from "../lib/format";
-import { toko, linkWA } from "../lib/toko";
+import { useTokoData } from "./TokoKonteks";
 
 export default function Etalase({ produk, ruangan }) {
+  const { toko, linkWA } = useTokoData();
   const [jenis, setJenis] = useState("indoor");
   const [ruId, setRuId] = useState(null);
   const [tId, setTId] = useState(null);

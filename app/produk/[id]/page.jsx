@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import Foto from "../../../components/Foto";
+import GaleriProduk from "../../../components/GaleriProduk";
 import TombolBagikan from "../../../components/TombolBagikan";
 import PesanProduk from "../../../components/PesanProduk";
 import SpesifikasiProduk from "../../../components/SpesifikasiProduk";
@@ -51,7 +52,7 @@ export default async function Detail({ params }) {
         <Link href="/#katalog" className="text-sm font-medium text-brand hover:underline">← Kembali ke katalog</Link>
         <div className="mt-6 grid gap-10 md:grid-cols-2">
           <CatatDilihat id={p.id} />
-          <Foto src={p.foto_url} alt={p.nama} className="aspect-square w-full rounded-2xl border border-garis" />
+          <GaleriProduk fotos={[p.foto_url, ...(p.foto_tambahan || [])]} alt={p.nama} />
           <div className="flex flex-col gap-4 self-center">
             <div className="flex flex-wrap gap-2">
               {p.kategori && <Link href={`/kategori/${slugKategori(p.kategori)}`} className="w-fit rounded-md bg-stone-200 px-2.5 py-1 text-xs font-semibold hover:bg-stone-100">{p.kategori}</Link>}

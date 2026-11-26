@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { toko } from "../lib/toko";
+import { ambilToko } from "../lib/toko-server";
 import TombolTema from "./TombolTema";
 
-export default function Header() {
+export default async function Header() {
+  const toko = await ambilToko();
   return (
     <header className="sticky top-0 z-30 border-b border-garis bg-kertas/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">

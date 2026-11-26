@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { toko, linkWA } from "../lib/toko";
+import { ambilToko } from "../lib/toko-server";
 
-export default function Footer() {
+export default async function Footer() {
+  const toko = await ambilToko();
+  const linkWA = (t) => `https://wa.me/${toko.nomorWhatsApp}?text=${encodeURIComponent(t)}`;
   return (
     <footer id="kontak" className="bg-teak text-stone-300">
       <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:grid-cols-3">

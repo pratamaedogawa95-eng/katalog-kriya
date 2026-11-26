@@ -4,7 +4,7 @@ import Foto from "./Foto";
 import { rupiah } from "../lib/format";
 import { labelPenggunaan, hemat } from "../lib/produk";
 
-export default function KartuProduk({ p, favorit, onFavorit, onTambah }) {
+export default function KartuProduk({ p, favorit, onFavorit, onTambah, banding = false, onBanding }) {
   const pakai = labelPenggunaan(p.penggunaan);
   const persen = hemat(p);
   return (
@@ -23,6 +23,7 @@ export default function KartuProduk({ p, favorit, onFavorit, onTambah }) {
       </div>
       <div className="flex flex-col gap-3 p-4">
         <Link href={`/produk/${p.id}`} className="font-semibold leading-snug hover:text-brand">{p.nama}</Link>
+        {onBanding && <label className="flex w-fit cursor-pointer items-center gap-2 text-xs text-redam"><input type="checkbox" checked={banding} onChange={() => onBanding(p.id)} className="size-4" /> Bandingkan</label>}
         <div className="flex items-end justify-between gap-2">
           <div className="leading-tight">
             {persen > 0 && <span className="block text-xs text-redam"><s>{rupiah(p.harga_coret)}</s> <b className="text-brand">−{persen}%</b></span>}

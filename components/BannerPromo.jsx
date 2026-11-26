@@ -1,6 +1,7 @@
-import { promo } from "../lib/promo";
+import { ambilToko } from "../lib/toko-server";
 
-export default function BannerPromo() {
+export default async function BannerPromo() {
+  const { promo } = await ambilToko();
   if (!promo.teks) return null;
   return (
     <div className="bg-kuningan px-5 py-2.5 text-center text-sm font-medium text-teak">

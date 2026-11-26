@@ -6,6 +6,6 @@ import { batasi, ipKlien } from "../lib/batas";
 export async function catatKlik(id) {
   const n = Number(id);
   if (!Number.isInteger(n) || n <= 0) return;
-  if (!batasi(`klik:${await ipKlien()}`, 30, 60_000)) return;
+  if (!(await batasi(`klik:${await ipKlien()}`, 30, 60_000))) return;
   try { await dbServer().from("klik_wa").insert({ produk_id: n }); } catch {}
 }
