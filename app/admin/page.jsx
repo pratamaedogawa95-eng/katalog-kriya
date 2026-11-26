@@ -26,6 +26,7 @@ export default async function Admin({ searchParams }) {
   if (q) kueri = kueri.or(`nama.ilike.%${q}%,kategori.ilike.%${q}%`);
   const { data, error, count } = await kueri.range((hal - 1) * PER, hal * PER - 1);
   const { count: nRuang } = await sb.from("ruangan").select("*", { count: "exact", head: true });
+  const { count: nUlasan } = await sb.from("ulasan").select("*", { count: "exact", head: true }).eq("status", "menunggu");
   const { count: nTanda } = await sb.from("tanda").select("*", { count: "exact", head: true });
 
   const l = semua || [];
@@ -38,6 +39,7 @@ export default async function Admin({ searchParams }) {
     ["Kategori", new Set(l.map((p) => p.kategori).filter(Boolean)).size],
     ["Ruangan", nRuang ?? 0],
     ["Tanda (+)", nTanda ?? 0],
+    ["Ulasan menunggu", nUlasan ?? 0],
     ["Nilai stok", rupiah(l.reduce((a, p) => a + p.harga * st(p), 0))],
   ];
   const hitung = {};

@@ -19,3 +19,7 @@ Halaman per kategori `/kategori/[slug]`, mode gelap, pilih jumlah di halaman det
 ## Fitur tahap 3
 Foto tambahan (galeri), bandingkan 2 produk, kelola kategori, impor CSV, pengaturan toko dari admin (nama, WhatsApp, promo), log aktivitas admin, dan rate limit login di database.
 Jalankan `docs/migrasi-bonus.sql` lalu `docs/migrasi-bonus2.sql` di Supabase SQL Editor **sebelum** deploy kode ini.
+
+## Fitur tahap 4
+Unggah foto ke Supabase Storage, varian harga per ukuran, ulasan pelanggan dengan moderasi admin, dan kelola akun admin.
+Jalankan `docs/migrasi-bonus3.sql` di Supabase SQL Editor **sebelum** deploy kode ini. Pastikan pendaftaran akun publik dimatikan di Supabase (Authentication → Sign In / Providers).

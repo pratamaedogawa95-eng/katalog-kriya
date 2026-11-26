@@ -5,6 +5,7 @@ import { dbSesi } from "../../lib/supabase/sesi";
 import { batasi, batasiLokal, lepas, ipKlien } from "../../lib/batas";
 import { catat } from "../../lib/log";
 import { bacaCsv } from "../../lib/csv";
+import { dbServer } from "../../lib/supabase/server";
 
 async function wajibAdmin() {
   const sb = await dbSesi();
@@ -77,6 +78,16 @@ function bacaProduk(fd) {
   if (tambahan.length > 5) return { error: "Foto tambahan maksimal 5 link." };
   if (tambahan.some((u) => u.length > 500 || !/^(https:\/\/|\/(?!\/))/.test(u))) return { error: "Setiap link foto tambahan harus diawali https:// atau /." };
   d.foto_tambahan = tambahan;
+  // US-48: varian harga, satu per baris "Nama | Harga", maksimal 8.
+  const baris = String(fd.get("varian") || "").split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+  if (baris.length > 8) return { error: "Varian maksimal 8 baris." };
+  d.varian = [];
+  for (const b of baris) {
+    const [nm, hg] = b.split("|").map((x) => x.trim());
+    const h = Number((hg || "").replace(/[.\s]/g, ""));
+    if (!nm || nm.length > 40 || !Number.isInteger(h) || h < 0 || h > 1_000_000_000) return { error: `Varian "${b.slice(0, 40)}" tidak valid. Format: Nama | Harga (contoh: 120 cm | 1650000).` };
+    d.varian.push({ nama: nm, harga: h });
+  }
   if (d.berat_kg !== null) d.berat_kg = Math.round(d.berat_kg * 10) / 10;
   return { d };
 }
@@ -205,4 +216,75 @@ export async function imporProduk(_, fd) {
   }
   const ringkas = `${lolos.length} produk diimpor, ${gagal.length} baris dilewati.`;
   return gagal.length ? { error: `${ringkas} ${gagal.slice(0, 8).join(" ")}` } : { ok: ringkas };
+}
+
+// ---------- US-29: unggah foto ke Supabase Storage ----------
+function jenisGambar(b) {
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return { mime: "image/jpeg", ext: "jpg" };
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return { mime: "image/png", ext: "png" };
+  if (b.toString("ascii", 0, 4) === "RIFF" && b.toString("ascii", 8, 12) === "WEBP") return { mime: "image/webp", ext: "webp" };
+  return null;
+}
+
+export async function unggahFoto(fd) {
+  const sb = await wajibAdmin();
+  const f = fd.get("berkas");
+  if (!f || typeof f === "string" || f.size === 0) return { error: "Pilih berkas gambar." };
+  if (f.size > 4 * 1024 * 1024) return { error: "Ukuran foto maksimal 4 MB." };
+  const buf = Buffer.from(await f.arrayBuffer());
+  const jenis = jenisGambar(buf); // isi berkas diperiksa, bukan hanya nama atau tipe yang dikirim browser
+  if (!jenis) return { error: "Format harus JPG, PNG, atau WebP." };
+  const nama = `${Date.now()}-${globalThis.crypto.randomUUID().slice(0, 8)}.${jenis.ext}`;
+  const db = dbServer();
+  const { error } = await db.storage.from("produk-foto").upload(nama, buf, { contentType: jenis.mime, upsert: false });
+  if (error) return { error: "Gagal mengunggah. Pastikan SQL migrasi-bonus3 sudah dijalankan (bucket produk-foto)." };
+  await catat(sb, "Unggah foto", nama);
+  return { url: db.storage.from("produk-foto").getPublicUrl(nama).data.publicUrl };
+}
+
+// ---------- US-39: moderasi ulasan ----------
+export async function ubahUlasan(fd) {
+  const sb = await wajibAdmin();
+  const id = String(fd.get("id") || ""), status = String(fd.get("status") || "");
+  if (!/^\d+$/.test(id) || !["tampil", "ditolak", "menunggu"].includes(status)) return;
+  await sb.from("ulasan").update({ status }).eq("id", id);
+  await catat(sb, `Ulasan ${status}`, `id ${id}`);
+  revalidatePath("/admin/ulasan"); revalidatePath("/produk", "layout");
+}
+
+export async function hapusUlasan(fd) {
+  const sb = await wajibAdmin();
+  const id = String(fd.get("id") || "");
+  if (!/^\d+$/.test(id)) return;
+  await sb.from("ulasan").delete().eq("id", id);
+  await catat(sb, "Hapus ulasan", `id ${id}`);
+  revalidatePath("/admin/ulasan"); revalidatePath("/produk", "layout");
+}
+
+// ---------- US-44: kelola akun admin ----------
+export async function tambahAdmin(_, fd) {
+  const sb = await wajibAdmin();
+  const email = String(fd.get("email") || "").trim().toLowerCase();
+  const password = String(fd.get("password") || "");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 120) return { error: "Email tidak valid." };
+  if (password.length < 10) return { error: "Password minimal 10 karakter." };
+  const { error } = await dbServer().auth.admin.createUser({ email, password, email_confirm: true });
+  if (error) return { error: "Gagal membuat akun. Email mungkin sudah terdaftar." };
+  await catat(sb, "Tambah admin", email);
+  revalidatePath("/admin/akun");
+  return { ok: `Akun ${email} dibuat. Beri tahu password-nya lewat jalur aman.` };
+}
+
+export async function hapusAdmin(fd) {
+  const sb = await wajibAdmin();
+  const id = String(fd.get("id") || "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  const { data: { user } } = await sb.auth.getUser();
+  if (user?.id === id) return; // tidak boleh menghapus akun sendiri
+  const db = dbServer();
+  const { data } = await db.auth.admin.listUsers({ perPage: 100 });
+  if ((data?.users?.length ?? 0) < 2) return; // minimal satu admin harus tersisa
+  const { error } = await db.auth.admin.deleteUser(id);
+  if (!error) await catat(sb, "Hapus admin", id);
+  revalidatePath("/admin/akun");
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useActionState } from "react";
-import { masuk, gantiPassword, simpanProduk, simpanPengaturan, imporProduk } from "../app/admin/actions";
+import UnggahFoto from "./UnggahFoto";
+import { masuk, gantiPassword, simpanProduk, simpanPengaturan, imporProduk, tambahAdmin } from "../app/admin/actions";
 
 function Pesan({ s }) {
   if (!s) return null;
@@ -55,8 +56,8 @@ export function FormProduk({ awal, kategoriAda = [] }) {
             </select></div>
         </div>
         <div><label htmlFor="deskripsi" className="label">Deskripsi</label><textarea id="deskripsi" name="deskripsi" rows={4} maxLength={2000} className="input" defaultValue={v("deskripsi")} /></div>
-        <div><label htmlFor="foto_tambahan" className="label">Foto tambahan (satu link per baris, maksimal 5)</label><textarea id="foto_tambahan" name="foto_tambahan" rows={3} className="input" defaultValue={(awal?.foto_tambahan || []).join("\n")} placeholder="https://…" /></div>
-        <Isian label="Link foto utama" nama="foto_url" defaultValue={v("foto_url")} placeholder="https://… atau /produk/kursi.svg" />
+        <div><label htmlFor="foto_tambahan" className="label">Foto tambahan (satu link per baris, maksimal 5)</label><textarea id="foto_tambahan" name="foto_tambahan" rows={3} className="input" defaultValue={(awal?.foto_tambahan || []).join("\n")} placeholder="https://…" /><div className="mt-2"><UnggahFoto target="foto_tambahan" tambah /></div></div>
+        <div><Isian label="Link foto utama" nama="foto_url" defaultValue={v("foto_url")} placeholder="https://… atau /produk/kursi.svg" /><div className="mt-2"><UnggahFoto target="foto_url" /></div></div>
       </fieldset>
 
       <fieldset className="flex flex-col gap-4"><legend className="mb-1 font-display text-lg font-bold">Harga &amp; stok</legend>
@@ -69,6 +70,7 @@ export function FormProduk({ awal, kategoriAda = [] }) {
           <Isian label="Urutan tampil (0 = biasa, angka kecil lebih dulu)" nama="urutan" type="number" min="0" max="9999" step="1" defaultValue={awal?.urutan ?? 0} />
           <label className="mt-7 flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="aktif" defaultChecked={awal?.aktif ?? true} className="size-4" /> Tampilkan di toko (aktif)</label>
         </div>
+        <div><label htmlFor="varian" className="label">Varian harga per ukuran (opsional, satu per baris: Nama | Harga)</label><textarea id="varian" name="varian" rows={3} className="input" defaultValue={(awal?.varian || []).map((x) => `${x.nama} | ${x.harga}`).join("\n")} placeholder={"120 cm | 1650000\n160 cm | 2100000"} /><p className="mt-1 text-xs text-redam">Bila diisi, pelanggan memilih varian di halaman produk. Isi kolom Harga jual dengan varian termurah.</p></div>
         <Isian label="Badge (opsional, mis. Baru, Terlaris, Hemat)" nama="badge" maxLength={20} defaultValue={v("badge")} />
       </fieldset>
 
@@ -142,6 +144,19 @@ export function FormImpor() {
       <div><label htmlFor="berkas" className="label">Berkas CSV</label><input id="berkas" name="berkas" type="file" accept=".csv,text/csv" required className="input" /></div>
       <Pesan s={s} />
       <button className="btn-brand w-fit" disabled={tunda}>{tunda ? "Mengimpor…" : "Impor"}</button>
+    </form>
+  );
+}
+
+export function FormAkun() {
+  const [s, aksi, tunda] = useActionState(tambahAdmin, null);
+  return (
+    <form action={aksi} className="panel mt-6 flex w-full max-w-md flex-col gap-4 p-6">
+      <h2 className="font-display text-lg font-bold">Tambah admin</h2>
+      <Isian label="Email" nama="email" type="email" required autoComplete="off" />
+      <Isian label="Password awal (minimal 10 karakter)" nama="password" type="password" required minLength={10} autoComplete="new-password" />
+      <Pesan s={s} />
+      <button className="btn-brand w-fit" disabled={tunda}>{tunda ? "Membuat…" : "Buat akun"}</button>
     </form>
   );
 }

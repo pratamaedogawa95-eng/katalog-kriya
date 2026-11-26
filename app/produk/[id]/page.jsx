@@ -6,6 +6,7 @@ import Foto from "../../../components/Foto";
 import GaleriProduk from "../../../components/GaleriProduk";
 import TombolBagikan from "../../../components/TombolBagikan";
 import PesanProduk from "../../../components/PesanProduk";
+import UlasanProduk from "../../../components/UlasanProduk";
 import SpesifikasiProduk from "../../../components/SpesifikasiProduk";
 import CatatDilihat from "../../../components/CatatDilihat";
 import { dbServer } from "../../../lib/supabase/server";
@@ -61,7 +62,7 @@ export default async function Detail({ params }) {
             <h1 className="font-display text-3xl font-bold md:text-4xl">{p.nama}</h1>
             <div>
               {hemat(p) > 0 && <p className="text-sm text-redam"><s>{rupiah(p.harga_coret)}</s> <b className="text-brand">Hemat {hemat(p)}%</b></p>}
-              <p className="font-display text-3xl font-bold text-brand">{rupiah(p.harga)}</p>
+              <p className="font-display text-3xl font-bold text-brand">{Array.isArray(p.varian) && p.varian.length > 0 && <span className="block text-sm font-normal text-redam">Mulai dari</span>}{rupiah(p.harga)}</p>
             </div>
             {p.deskripsi && <p className="max-w-prose leading-relaxed text-redam">{p.deskripsi}</p>}
             {(p.stok ?? 1) > 0 ? (
@@ -79,6 +80,7 @@ export default async function Detail({ params }) {
           </div>
         </div>
         <SpesifikasiProduk p={p} />
+        <UlasanProduk produkId={p.id} />
         {terkait.length > 0 && (
           <section className="mt-14">
             <h2 className="font-display text-2xl font-bold">Produk terkait</h2>

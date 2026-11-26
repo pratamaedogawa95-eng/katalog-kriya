@@ -7,5 +7,6 @@ const aman = [
 ];
 export default {
   poweredByHeader: false,
+  experimental: { serverActions: { bodySizeLimit: "5mb" } }, // unggah foto produk (maks 4 MB)
   async headers() { return [{ source: "/:path*", headers: aman }]; },
 };
